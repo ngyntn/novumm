@@ -1,0 +1,300 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Đây là nơi khai báo client sẽ được sinh ra
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- ĐỊNH NGHĨA ENUMS ---
+enum Role {
+  user
+  admin
+}
+
+enum ModerationStatus {
+  public
+  private
+  hidden_by_admin
+  deleted
+}
+
+enum InteractionAction {
+  click
+  read
+  like
+  comment
+  bookmark
+}
+
+enum NotificationType {
+  like
+  comment
+  reply
+  follow
+  new_article_from_followed
+  article_hidden_by_admin
+  appeal_approved
+  appeal_rejected
+}
+
+enum ReportSource {
+  user
+  ai
+}
+
+enum ReportStatus {
+  pending
+  dismissed
+  confirmed
+}
+
+enum ReportCategory {
+  spam
+  hate_speech
+  adult_content
+  violence
+  fake_news
+  other
+}
+
+enum ReportAction {
+  none
+  warn_author
+  remove_article
+  ban_user
+}
+
+enum AppealStatus {
+  pending
+  approved
+  rejected
+}
+
+// --- ĐỊNH NGHĨA MODELS ---
+
+model User {
+  id           Int      @id @default(autoincrement())
+  fullName     String?  @map("full_name") @db.VarChar(100)
+  email        String   @unique @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  bio          String?  @db.Text
+  avatarUrl    String?  @map("avatar_url") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  role         Role     @default(user)
+  isActive     Boolean  @default(true) @map("is_active")
+
+  // Quan hệ
+  articles          Article[] // Các bài viết của user
+  comments          Comment[] // Các comment của user
+  interactions      UserArticleInteraction[]
+  notifications     Notification[]           @relation("RecipientNotifications")
+  sentNotifications Notification[]           @relation("ActorNotifications")
+  sentReports       ArticleReport[]          @relation("ReporterReports")
+  handledReports    ArticleReport[]          @relation("AdminReports")
+  sentAppeals       ArticleAppeal[]          @relation("AuthorAppeals")
+  handledAppeals    ArticleAppeal[]          @relation("AdminAppeals")
+  // Quan hệ Follows (Many-to-Many)
+  followers         Follow[]                 @relation("Following") // Danh sách người follow mình
+  following         Follow[]                 @relation("Followers") // Danh sách mình follow
+
+  // Quan hệ Likes (Many-to-Many với cột phụ)
+  articleLikes ArticleLike[]
+
+  // Quan hệ Bookmarks (Many-to-Many với cột phụ)
+  bookmarks Bookmark[]
+
+  @@map("users") // Map tên model 'User' với tên bảng 'users'
+}
+
+model Article {
+  id               Int              @id @default(autoincrement())
+  authorId         Int              @map("author_id")
+  title            String           @db.VarChar(255)
+  content          String           @db.LongText
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  slug             String           @unique @db.VarChar(255)
+  thumbnailUrl     String           @map("thumbnail_url") @db.VarChar(255)
+  readTimeMinutes  Int              @map("read_time_minutes")
+  moderationStatus ModerationStatus @default(public) @map("moderation_status")
+  violationReason  String?          @map("violation_reason") @db.Text
+  is_indexed       Boolean          @default(false)
+  
+  // Quan hệ
+  author        User                     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  articleTags   ArticleTag[] // Quan hệ với bảng trung gian
+  articleLikes  ArticleLike[]
+  bookmarks     Bookmark[]
+  interactions  UserArticleInteraction[]
+  notifications Notification[]
+  reports       ArticleReport[]
+  appeals       ArticleAppeal[]
+
+  @@map("articles")
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(100)
+
+  // Quan hệ
+  articleTags ArticleTag[] // Quan hệ với bảng trung gian
+
+  @@map("tags")
+}
+
+// Bảng trung gian cho Article và Tag (N-N)
+model ArticleTag {
+  articleId Int @map("article_id")
+  tagId     Int @map("tag_id")
+
+  // Quan hệ
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId]) // Khóa chính tổng hợp
+  @@map("article_tags")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  articleId Int      @map("article_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  parentId  Int?     @map("parent_id")
+  isAuthor  Boolean  @default(false) @map("is_author")
+
+  // Quan hệ
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  // Quan hệ tự tham chiếu (cho replies)
+  parent  Comment?  @relation("Replies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies Comment[] @relation("Replies")
+
+  notifications Notification[]
+
+  @@map("comments")
+}
+
+// Bảng trung gian cho Follows (N-N)
+model Follow {
+  followerId Int @map("follower_id")
+  followedId Int @map("followed_id")
+
+  // Quan hệ
+  follower User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+  followed User @relation("Following", fields: [followedId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followedId])
+  @@map("follows")
+}
+
+// Bảng trung gian Article-User (Likes)
+model ArticleLike {
+  userId    Int      @map("user_id")
+  articleId Int      @map("article_id")
+  isLiked   Boolean  @default(true) @map("is_liked")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("article_likes")
+}
+
+// Bảng trung gian Article-User (Bookmarks)
+model Bookmark {
+  userId    Int      @map("user_id")
+  articleId Int      @map("article_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, articleId])
+  @@map("bookmarks")
+}
+
+model UserArticleInteraction {
+  id        Int               @id @default(autoincrement())
+  userId    Int               @map("user_id")
+  articleId Int               @map("article_id")
+  action    InteractionAction
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  // Quan hệ
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId, action])
+  @@map("user_article_interactions")
+}
+
+model Notification {
+  id          Int              @id @default(autoincrement())
+  recipientId Int              @map("recipient_id")
+  actorId     Int?             @map("actor_id")
+  type        NotificationType
+  articleId   Int?             @map("article_id")
+  commentId   Int?             @map("comment_id")
+  metadata    Json?            @db.Json
+  isRead      Boolean          @default(false) @map("is_read")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  // Quan hệ
+  recipient User     @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User?    @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
+}
+
+model ArticleReport {
+  id           Int            @id @default(autoincrement())
+  articleId    Int            @map("article_id")
+  reporterId   Int?           @map("reporter_id")
+  source       ReportSource
+  reason       String         @db.Text
+  category     ReportCategory
+  aiConfidence Float?         @map("ai_confidence")
+  status       ReportStatus   @default(pending)
+  adminId      Int?           @map("admin_id")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  reviewedAt   DateTime?      @map("reviewed_at")
+
+  // Quan hệ
+  article  Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reporter User?   @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: SetNull)
+  admin    User?   @relation("AdminReports", fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@map("article_reports")
+}
+
+model ArticleAppeal {
+  id              Int          @id @default(autoincrement())
+  articleId       Int          @map("article_id")
+  authorId        Int          @map("author_id")
+  appealNote      String       @map("appeal_note") @db.Text
+  status          AppealStatus @default(pending)
+  adminId         Int?         @map("admin_id")
+  adminReviewNote String?      @map("admin_review_note") @db.Text
+  createdAt       DateTime     @default(now()) @map("created_at")
+  reviewedAt      DateTime?    @map("reviewed_at")
+
+  // Quan hệ
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  author  User    @relation("AuthorAppeals", fields: [authorId], references: [id], onDelete: Cascade)
+  admin   User?   @relation("AdminAppeals", fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@map("article_appeals")
+}
