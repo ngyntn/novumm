@@ -35,7 +35,7 @@ const NewsCard = ({
   const [currentUserReaction, setCurrentUserReaction] = useState(isLiked);
   const [currentIsBookmarked, setCurrentIsBookmarked] = useState(isBookmarked);
 
-  const snippet = createContentSnippet(content, 120);
+  const snippet = createContentSnippet(content, 1200);
 
   useEffect(() => {
     setCurrentLikeCount(likesCount || 0);
@@ -107,7 +107,7 @@ const NewsCard = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-6 sm:px-10 py-6 m-4 rounded-xl shadow-sm max-w-5xl w-full mx-auto transition-colors">
+    <div className="bg-white dark:bg-gray-900 border-[0.5px] border-gray-200 dark:border-gray-700 px-6 sm:px-10 py-6 m-4 rounded-xl max-w-5xl w-full mx-auto transition-colors">
       {/* --- PHẦN HEADER (TÁC GIẢ, TIÊU ĐỀ, HÀNH ĐỘNG) --- */}
       <div className="flex justify-between items-start">
         {/* --- CỘT BÊN TRÁI (TIÊU ĐỀ, TÁC GIẢ) --- */}
@@ -217,7 +217,7 @@ const NewsCard = ({
             <img
               src={thumbnailUrl}
               alt={title}
-              className="rounded-lg w-full h-32 object-cover border dark:border-gray-700"
+              className="rounded-lg w-full h-full object-cover border dark:border-gray-700"
               onError={(e) => {
                 e.target.onerror = null; // Ngăn lặp vô hạn
                 e.target.src =
