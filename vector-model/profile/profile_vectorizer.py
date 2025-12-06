@@ -1,4 +1,5 @@
 import math
+import os
 import time
 
 import numpy as np
@@ -18,6 +19,10 @@ BASE_SCORES = {
     'bookmark': 8
 }
 
+ES_URL = os.getenv("ES_URL", 'http://localhost:9200')
+print(f'[Profile_vectorizer.py] Get ES_URL from .env ${ES_URL}')
+
+
 TARGET_DIMS = 1000 # thay đổi theo tfidf_builder
 ES_ARTICLE_INDEX = 'articles'
 ES_PROFILE_INDEX = 'user_profiles'
@@ -25,7 +30,7 @@ ES_PROFILE_INDEX = 'user_profiles'
 JOB_INTERVAL_MINUTES = 1440  # Chạy mỗi 1 ngay
 ROLLING_WINDOW_DAYS = 90  # Chỉ xét action trong 3 tháng gần nhất
 
-es = Elasticsearch(['http://localhost:9200'])
+es = Elasticsearch([ES_URL])
 
 def get_final_score(action: str, created_at: datetime) -> float:
 
