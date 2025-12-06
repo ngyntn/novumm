@@ -1,5 +1,5 @@
 class UserResponseDTO {
-    constructor({ id, fullName, email, bio, avatarUrl, role, totalFollowers, totalFollowing, totalArticleLikes }) {
+    constructor({ id, fullName, email, bio, avatarUrl, role, totalFollowers, totalFollowing, totalArticleLikes, isFollowing }) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -9,6 +9,7 @@ class UserResponseDTO {
         this.totalFollowers = totalFollowers || 0;
         this.totalFollowing = totalFollowing || 0;
         this.totalArticleLikes = totalArticleLikes || 0;
+        this.isFollowing = isFollowing || false;
     }
 }
 

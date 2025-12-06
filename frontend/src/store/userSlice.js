@@ -68,11 +68,29 @@ const userSlice = createSlice({
             .addCase(fetchUserProfile.pending, (state) => { state.profile.status = 'loading'; })
             .addCase(fetchUserProfile.fulfilled, (state, action) => { state.profile.status = 'succeeded'; state.profile.data = action.payload; })
             .addCase(fetchUserProfile.rejected, (state, action) => { state.profile.status = 'failed'; state.profile.error = action.payload; })
-            .addCase(fetchUserNews.fulfilled, (state, action) => { state.profile.news = action.payload; })
+            .addCase(fetchUserNews.fulfilled, (state, action) => { 
+                state.profile.news = action.payload; 
+                console.log("Fetched user news:", action.payload);
+            })
             .addCase(toggleFollow.fulfilled, (state, action) => {
-                state.currentUser = action.payload.updatedCurrentUser;
-                if (state.profile.data?.id === action.payload.updatedTargetUser.id) {
-                    state.profile.data = action.payload.updatedTargetUser;
+                console.log("Toggle follow fulfilled with data:", action.payload);
+                let act = action.payload.action;
+                if (act === 'follow' && state.profile.data) {
+                    console.log("Updating state for follow action");
+                    state.profile.data = {
+                        ...state.profile.data,
+                        isFollowing: true,
+                        totalFollowers: (state.profile.data.totalFollowers || 0) + 1,
+                    };
+                    console.log("Updated profile data:", state.profile.data);
+                } else if (act === 'unfollow' && state.profile.data) {
+                    console.log("Updating state for unfollow action");
+                    state.profile.data = {
+                        ...state.profile.data,
+                        isFollowing: false,
+                        totalFollowers: Math.max((state.profile.data.totalFollowers || 1) - 1, 0),
+                    };
+                    console.log("Updated profile data:", state.profile.data);
                 }
             })
             .addCase(updateUserProfile.fulfilled, (state, action) => {

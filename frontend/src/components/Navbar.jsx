@@ -68,7 +68,7 @@ function Navbar() {
                 className="h-12 w-auto hidden sm:block dark:hidden"
               /> */}
 
-              <h2 className="logo-font text-[22px]">Novum</h2>
+              <h2 className="logo-font text-[22px] dark:text-white">Novum</h2>
             </Link>
           </div>
         </div>

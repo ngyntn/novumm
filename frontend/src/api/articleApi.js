@@ -167,13 +167,14 @@ export const toggleBookmark = createAsyncThunk(
 
 export const fetchUserNews = createAsyncThunk(
     'articles/fetchByUser', 
-    async ({ userId, page, limit = 10 }, { rejectWithValue }) => {
+    async ({ userId, page = 1, limit = 10 }, { rejectWithValue }) => {
         try {
-            const response = await api.get('/articles', { params: { userId, page, limit } });
+            const response = await api.get('/articles', { params: { authorId: userId, page, limit } });
             const resData = response.data.data; 
+            console.log("34234324 Fetched user articles:", resData);
             return {
-                articles: resData.data,
-                hasMore: resData.pagination.page < resData.pagination.totalPages
+                articles: resData.articles,
+                hasMore: page < resData.pagination.totalPages
             };
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);

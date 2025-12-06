@@ -16,8 +16,9 @@ export const fetchCurrentUser = createAsyncThunk(
 
 export const fetchUserProfile = createAsyncThunk(
     'user/fetchUserProfile',
-    async (userId, { rejectWithValue }) => { // Gộp tempLogin và fetchUserProfile
+    async ({ userId }, { rejectWithValue }) => { // Gộp tempLogin và fetchUserProfile
         try {
+            console.log("Fetching user profile for ID:", userId);
             const response = await api.get(`/users/${userId}`);
             return response.data.data;
         } catch (error) {
@@ -28,12 +29,17 @@ export const fetchUserProfile = createAsyncThunk(
 
 export const toggleFollow = createAsyncThunk(
     'user/toggleFollow',
-    async (targetUserId, { rejectWithValue }) => { // Đơn giản hóa logic
+    async ({ targetUser, isFollowing }, { rejectWithValue }) => { // Đơn giản hóa logic
         try {
             // Gửi ID user cần follow/unfollow, BE sẽ tự xử lý
-            const response = await api.post(`/users/follow/${targetUserId}`);
+            const action = isFollowing ? 'unfollow' : 'follow';
+            const response = await api.post(`/users/${action}/${targetUser}`);
             // BE nên trả về user đã được cập nhật
-            return response.data.data; 
+            console.log("Toggle follow response data:", response.data);
+            return {
+                action,
+                status: response.data.success,
+            };
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);
         }

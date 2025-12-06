@@ -125,9 +125,10 @@ const findByIdsV2 = async (userId, articleIds) => {
 
 
 
-const findAll = async (userId, { skip, take }) => {
+const findAll = async (userId, authorId, { skip, take }) => {
   const whereClause = {
     moderationStatus: "public",
+    authorId: authorId,
   };
 
   const [articles, totalCount] = await prisma.$transaction([

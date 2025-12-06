@@ -9,14 +9,29 @@ const findByEmail = async (email) => {
 };
 
 const updatePassword = async (id, password) => {
-    return prisma.user.update({ where: { id }, data: { passwordHash : password } });
+    return prisma.user.update({ where: { id }, data: { passwordHash: password } });
 };
 
 
-const findById = async (id) => {
+const findById = async (id, currentUserId) => {
     return prisma.user.findUnique({
         where: { id },
-        select: { id: true, fullName: true, email: true, bio: true, avatarUrl: true, role: true },
+        select: {
+            id: true,
+            fullName: true,
+            email: true,
+            bio: true,
+            avatarUrl: true,
+            role: true,
+
+            // Kiểm tra follow
+            followers: {
+                where: {
+                    followerId: currentUserId, // current user -> target user
+                },
+                select: { followerId: true },
+            },
+        },
     });
 };
 
@@ -24,7 +39,7 @@ const updateById = async (id, data) => {
     return prisma.user.update({
         where: { id },
         data,
-        select: { fullName: true,  bio: true, avatarUrl: true },
+        select: { fullName: true, bio: true, avatarUrl: true },
     });
 };
 

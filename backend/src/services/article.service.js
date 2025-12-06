@@ -75,9 +75,10 @@ const getArticleBySlug = async (userId, slug) => {
 const getAllArticles = async (userId, query) => {
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
+  const authorId = parseInt(query.authorId) || null;
   const skip = (page - 1) * limit;
 
-  const { articles, totalCount } = await articleRepository.findAll(userId, {
+  const { articles, totalCount } = await articleRepository.findAll(userId, authorId, {
     skip,
     take: limit,
   });

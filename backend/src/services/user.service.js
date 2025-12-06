@@ -4,12 +4,15 @@ const followRepository = require('../repositories/follow.repository');
 const logger = require('../utils/logger');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../utils/AppError');
 
-const getUser = async (userId) => {
-    const user = await userRepository.findById(userId);
+const getUser = async (userId, currentUserId) => {
+    const user = await userRepository.findById(userId, currentUserId);
     if (!user) {
         throw new NotFoundError('User not found');
     }
 
+    console.log("User found:", user);
+
+    const isFollowing = user.followers.length > 0;
     const totalFollowers = await followRepository.countFollowers(userId);
     const totalFollowing = await followRepository.countFollowing(userId);
     const totalArticleLikes = await articleLikeRepository.countArticleLikes(userId);
@@ -17,6 +20,7 @@ const getUser = async (userId) => {
     logger.info(`Fetched user ${userId}`);
     return {
         ...user,
+        isFollowing,
         totalFollowers,
         totalFollowing,
         totalArticleLikes,
