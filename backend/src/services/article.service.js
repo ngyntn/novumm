@@ -14,7 +14,7 @@ const logger = require("../utils/logger");
 
 const redisClient = require('../config/redis.config');
 
-const RECOMMEND_API = process.env.RECOMMEND_API;
+const PYTHON_API = process.env.PYTHON_API;
 
 const createArticle = async (body, userId, file) => {
   if (!file) {
@@ -188,7 +188,8 @@ const getRecommendedArticlesV2 = async (query) => {
 
 
       // lấy danh sách 200 id bài viết gợi ý chưa đọc từ python service
-      const response = await axios.post(RECOMMEND_API, {
+      const TARGET_API = PYTHON_API + '/articles/recommend';
+      const response = await axios.post(TARGET_API, {
         user_id: userId,
         read_ids: Array.from(readArticleSet),
       });
@@ -275,8 +276,8 @@ const getRecommendedArticles = async (query) => {
   if (!userId) throw new BadRequestError("User ID là bắt buộc.");
 
   try {
-    const rcmApi = `http://localhost:5000/articles/recommend`;
-    const response = await axios.get(rcmApi, {
+    const TARGET_API = PYTHON_API + '/articles/recommend';
+    const response = await axios.get(TARGET_API, {
       params: { user: userId, page, size: Math.floor(limit * 80 / 100) },
     });
 
@@ -327,8 +328,8 @@ const getRecommendedArticles = async (query) => {
 
 const getSearchArticles = async ({ query, page, limit, userId }) => {
   try {
-    const rcmApi = `http://localhost:5000/articles/search/knn`;
-    const response = await axios.get(rcmApi, {
+    const TARGET_API = PYTHON_API + '/articles/search/knn';
+    const response = await axios.get(TARGET_API, {
       params: { key: query, page, size: limit },
     });
 
