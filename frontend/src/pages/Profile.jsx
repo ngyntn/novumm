@@ -27,19 +27,32 @@ const Profile = () => {
 
     const [activeTab, setActiveTab] = useState('posts');
 
+    const [isCurrentUserProfile, setIsCurrentUserProfile] = useState(currentUser?.id === userId);
+
+    useEffect(() => {
+        console.log("is current user: ", currentUser?.id == userId);
+        setIsCurrentUserProfile(currentUser?.id == userId);
+    }, [currentUser, user]);
+
     useEffect(() => {
         if (!currentUser) {
             dispatch(fetchCurrentUser());
         }
         if (userId) {
+            console.log("Fetching from client", userId)
+            console.log("Current User:", currentUser);
             dispatch(fetchUserProfile({ userId }));
             dispatch(fetchUserNews({ userId }));
         }
 
         return () => {
             dispatch(resetProfile());
-        };  
+        };
     }, [userId, dispatch, currentUser]);
+
+    useEffect(() => {
+        console.log("news content:", news.articles);
+    }, [news])
 
     const renderContent = () => {
         let contentToRender = [];
@@ -47,18 +60,18 @@ const Profile = () => {
 
         switch (activeTab) {
             case 'posts':
-                contentToRender = news;
+                contentToRender = news.articles;
                 emptyMessage = "Người dùng này chưa có bài viết nào.";
                 break;
             case 'liked':
                 // Chỉ hiển thị tab này cho người dùng hiện tại
                 if (currentUser?.id === userId) {
-                    contentToRender = mockLikedPosts;
+                    contentToRender = mockLikedPosts; 
                     emptyMessage = "Bạn chưa thích bài viết nào.";
                 }
                 break;
             case 'bookmarked':
-                 // Chỉ hiển thị tab này cho người dùng hiện tại
+                // Chỉ hiển thị tab này cho người dùng hiện tại
                 if (currentUser?.id === userId) {
                     contentToRender = mockBookmarkedPosts;
                     emptyMessage = "Bạn chưa lưu bài viết nào.";
@@ -67,8 +80,8 @@ const Profile = () => {
             default:
                 break;
         }
-
-        if (contentToRender.length > 0) {
+        console.log("Content to render for tab", contentToRender);
+        if (contentToRender && contentToRender.length > 0) {
             return (
                 <div className="flex flex-col items-center gap-4">
                     {contentToRender.map((item) => (
@@ -93,12 +106,11 @@ const Profile = () => {
         return <div className="text-center py-10 text-red-500">Lỗi: {error}</div>;
     }
 
-    const isCurrentUserProfile = currentUser?.id === userId;
 
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen py-8 px-4 transition-colors">
-            <ProfileHeader user={user} />
-            
+            <ProfileHeader/>
+
             {/* Tabs Navigation */}
             <div className="w-full max-w-4xl mx-auto mt-8 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex justify-center sm:justify-start gap-4 sm:gap-8">
@@ -138,11 +150,10 @@ const Profile = () => {
 const TabButton = ({ label, icon: Icon, isActive, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 py-3 px-1 font-medium border-b-2 transition-colors ${
-            isActive 
-                ? 'border-indigo-500 text-indigo-500' 
-                : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-800 dark:hover:text-gray-200'
-        }`}
+        className={`flex items-center gap-2 py-3 px-1 font-medium border-b-2 transition-colors ${isActive
+            ? 'border-indigo-500 text-indigo-500'
+            : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-800 dark:hover:text-gray-200'
+            }`}
     >
         <Icon size={18} />
         <span>{label}</span>

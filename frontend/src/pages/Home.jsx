@@ -42,10 +42,10 @@ function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col items-center py-8 transition-colors">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+    <div className="min-h-screen bg-white/50 dark:bg-black flex flex-col items-center py-8 transition-colors">
+      {/* <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
         Trang chủ
-      </h1>
+      </h1> */}
       <ArticleList
         items={items}
         loading={loading}

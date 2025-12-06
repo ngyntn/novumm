@@ -30,4 +30,7 @@ router.get('/:id/bookmark-articles', authMiddleware, validateMiddleware(userVali
 router.post('/:id/follow', authMiddleware, followController.followUser);
 router.delete('/:id/unfollow', authMiddleware, followController.unfollowUser);
 
+router.post('/follow/:id', authMiddleware, followController.followUser);
+router.post('/unfollow/:id', authMiddleware, followController.unfollowUser);
+
 module.exports = router;

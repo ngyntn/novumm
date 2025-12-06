@@ -35,7 +35,7 @@ const NewsCard = ({
   const [currentUserReaction, setCurrentUserReaction] = useState(isLiked);
   const [currentIsBookmarked, setCurrentIsBookmarked] = useState(isBookmarked);
 
-  const snippet = createContentSnippet(content, 120);
+  const snippet = createContentSnippet(content, 1200);
 
   useEffect(() => {
     setCurrentLikeCount(likesCount || 0);
@@ -107,8 +107,9 @@ const NewsCard = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-6 sm:px-10 py-6 m-4 rounded-xl shadow-sm max-w-5xl w-full mx-auto transition-colors">
-      {/* --- PHẦN HEADER (TÁC GIẢ, TIÊU ĐỀ, HÀNH ĐỘNG) --- */}
+    <div className="bg-white dark:bg-gray-900 border-[0.5px] border-gray-200 dark:border-gray-700 px-6 sm:px-10 py-10 pb-20 m-4 rounded-[25px] max-w-5xl w-full mx-auto transition-colors shadow-[0_0_15px_rgba(0,0,0,0.02)] 
+    hover:shadow-[0_4px_20px_rgba(0,0,0,0.10)] transition-shadow duration-300">
+      {/* --- PHẦN HEADER (TÁC GIẢ, TIÊU ĐỀ, HÀNH ĐỘNG) --- */} 
       <div className="flex justify-between items-start">
         {/* --- CỘT BÊN TRÁI (TIÊU ĐỀ, TÁC GIẢ) --- */}
         <div className="flex-1 pr-4">
@@ -143,7 +144,7 @@ const NewsCard = ({
           </div>
 
           <h2
-            className="text-xl font-bold mb-1 hover:cursor-pointer hover:underline text-gray-900 dark:text-gray-100"
+            className="text-xl font-bold mb-1 hover:cursor-pointer text-gray-900 dark:text-gray-100 hover:text-blue-700 hover:dark:text-blue-400 transition-colors"
             onClick={handleOnClickTitle}
           >
             {title}
@@ -213,11 +214,11 @@ const NewsCard = ({
 
         {/* --- ẢNH THUMBNAIL --- */}
         {thumbnailUrl && (
-          <div className="col-span-4">
+          <div className="col-span-4 h-full">
             <img
               src={thumbnailUrl}
               alt={title}
-              className="rounded-lg w-full h-32 object-cover border dark:border-gray-700"
+              className="rounded-[25px] h-full object-cover border dark:border-gray-700"
               onError={(e) => {
                 e.target.onerror = null; // Ngăn lặp vô hạn
                 e.target.src =

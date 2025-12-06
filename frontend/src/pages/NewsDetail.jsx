@@ -35,9 +35,9 @@ function NewsDetail() {
     relatedArticles,
     relatedArticlesLoading,
   } = useSelector((state) => state.news);
-    const { currentUser } = useSelector((state) => state.user);
-    
-    console.log(item);
+  const { currentUser } = useSelector((state) => state.user);
+
+  console.log(item);
 
   useEffect(() => {
     if (slug) {
@@ -100,15 +100,17 @@ function NewsDetail() {
   return (
     <div className="dark:text-gray-200">
       {/* Thumbnail */}
-      <img
-        src={item.thumbnailUrl}
-        alt={item.title}
-        className="w-full h-[40vh] object-cover"
-      />
+      <div className="w-full h-[40vh] overflow-hidden"> 
+        <img
+          src={item.thumbnailUrl}
+          alt={item.title}
+          className="w-full h-full object-cover" // Quan trọng nhất là object-cover
+        />
+      </div>
 
       {/* === LAYOUT 3 CỘT (MỚI) === */}
       <div className="max-w-7xl mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-8">
-        
+
         {/* === CỘT TRÁI: BÀI VIẾT CỦA TÁC GIẢ === */}
         <aside className="w-full lg:w-1/4 space-y-6 lg:sticky lg:top-20 h-fit">
           <AuthorArticles
@@ -181,13 +183,13 @@ function NewsDetail() {
           <div
             className="prose dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{ __html: item.content }}
-                  />
-                  
-                  {item.tags && item.tags.length > 0 && (
+          />
+
+          {item.tags && item.tags.length > 0 && (
             <div className="mt-6 pt-4 border-t border-base-200 dark:border-base-700 flex flex-wrap gap-2">
               {item.tags.map((tag) => (
                 <Link
-                  to={`/search/${tag.name}`} 
+                  to={`/search/${tag.name}`}
                   key={tag.id}
                   className="btn btn-sm btn-ghost bg-gray-100 dark:bg-gray-800 rounded-full font-normal hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
@@ -204,9 +206,9 @@ function NewsDetail() {
           </div>
 
           {/* Khu vực bình luận */}
-          <CommentSection 
-            articleId={item.id} 
-            totalComments={item.commentsCount} 
+          <CommentSection
+            articleId={item.id}
+            totalComments={item.commentsCount}
           />
         </main>
 

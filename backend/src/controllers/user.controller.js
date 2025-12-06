@@ -16,7 +16,9 @@ const getMyProfile = async (req, res, next) => {
 const getUser = async (req, res, next) => {
     try {
         const userId = parseInt(req.params.id);
-        const user = await userService.getUser(userId);
+        const currentUserId = req.user ? req.user.id : null;
+        console.log("Fetching user with ID:", userId);
+        const user = await userService.getUser(userId, currentUserId);
         const response = new UserResponseDTO(user)
         res.status(200)
             .json(new ApiResponse(true, 'User fetched successfully', response));

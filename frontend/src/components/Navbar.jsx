@@ -44,29 +44,33 @@ function Navbar() {
   return (
     <div className="fixed top-0 left-0 w-full bg-white dark:bg-[rgb(24_34_45)] z-50 py-2 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 h-12">
-        <div className="flex-shrink-0">
-          <Link to="/" className="flex items-center gap-2" onClick={handleLogoClick}>
-            <img
-              src="/logo_dark.png"
-              alt="Logo Dark"
-              className="h-12 w-auto hidden dark:block"
-            />
-            <img
-              src="/logo_light.png"
-              alt="Logo Light"
-              className="h-12 w-auto dark:hidden"
-            />
-            <img
-              src="/name_dark.png"
-              alt="Tên ứng dụng Dark"
-              className="h-12 w-auto hidden dark:block"
-            />
-            <img
-              src="/name_light.png"
-              alt="Tên ứng dụng Light"
-              className="h-12 w-auto hidden sm:block dark:hidden"
-            />
-          </Link>
+        <div className="w-[200px] flex items-center">
+          <div className="flex-shrink-0">
+            <Link to="/" className="flex items-center gap-2" onClick={handleLogoClick}>
+              <img
+                src="/logo-dark-v1.png"
+                alt="Logo Dark"
+                className="h-6 w-auto hidden dark:block"
+              />
+              <img
+                src="/logo-light-v1.png"
+                alt="Logo Light"
+                className="h-6 w-auto dark:hidden"
+              />
+              {/* <img
+                src="/name_dark.png"
+                alt="Tên ứng dụng Dark"
+                className="h-12 w-auto hidden dark:block"
+              />
+              <img
+                src="/name_light.png"
+                alt="Tên ứng dụng Light"
+                className="h-12 w-auto hidden sm:block dark:hidden"
+              /> */}
+
+              <h2 className="logo-font text-[22px] dark:text-white">Novum</h2>
+            </Link>
+          </div>
         </div>
 
         {/* Thanh tìm kiếm */}
@@ -79,7 +83,7 @@ function Navbar() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               spellCheck="false"
-              className="input input-bordered border w-full pl-4 pr-10 py-2 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-transparent transition-colors"
+              className="input input-bordered border w-full pl-4 pr-10 py-2 rounded-2xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-transparent transition-colors"
             />
             <button
               onClick={handleSearch}
@@ -104,16 +108,18 @@ function Navbar() {
         </div>
 
         {/* Các nút điều hướng */}
-        <div className="flex-shrink-0 flex items-center gap-4">
-          <Link
-            to="/"
-            title="Home"
-            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <Home size={24} />
-          </Link>
-          <NotificationBell />
-          <UserMenu />
+        <div className="w-[200px] flex items-center">
+          <div className="flex-shrink-0 flex items-center gap-4">
+            <Link
+              to="/"
+              title="Home"
+              className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <Home size={24} />
+            </Link>
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </div>
       </div>
     </div>

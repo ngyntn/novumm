@@ -66,7 +66,7 @@ const getAllArticles = async (req, res, next) => {
     );
 
     res.status(200).json(
-      new ApiResponse(200, "Lấy danh sách bài viết thành công.", {
+      new ApiResponse(200, "Lấy danh sách bài viết thành công nè.", {
         articles: articlesDTO,
         pagination: pagination,
       })
