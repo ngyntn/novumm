@@ -1,4 +1,10 @@
+from dotenv import load_dotenv
+load_dotenv() # Must in top
 
+from config.db import get_connection, close_connection
+
+
+import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, Blueprint, request, jsonify
 
@@ -9,12 +15,11 @@ from tfidf.tfidf_builder import index_articles_full_job, index_articles_incremen
 
 app = Flask(__name__)
 
-
 scheduler = BackgroundScheduler()
 
 scheduler.add_job(index_articles_full_job, 'interval', seconds=86400, id='full_index_job', max_instances=1, coalesce=True) # 1 day
 scheduler.add_job(index_articles_incremental_job, 'interval', seconds=3600, id='incremental_index_job', max_instances=1, coalesce=True) # 1 hour
-scheduler.add_job(profile_update_job,'interval', seconds=60, id='profile_job', max_instances=1, coalesce=True) # 1 hour
+scheduler.add_job(profile_update_job,'interval', seconds=3600, id='profile_job', max_instances=1, coalesce=True) # 1 hour
 
 scheduler.start()
 
@@ -31,6 +36,15 @@ def paginate_results(results, page: int, size: int):
 @app.route("/")
 def home():
     return "Hello Flask"
+
+@app.route("/test")
+def testdb():
+    connection = get_connection()
+
+    return jsonify({
+        "message": "Test DB connection",
+        "status": "success" if connection else "failcd ",
+    })
 
 @app.route("/articles/search/knn", methods=["GET"])
 def search_knn():
@@ -71,6 +85,7 @@ def search_knn():
             }
         }), 500
 
+
 @app.route("/articles/recommend", methods=["POST"])
 def recommend ():
 
@@ -110,4 +125,4 @@ def recommend ():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

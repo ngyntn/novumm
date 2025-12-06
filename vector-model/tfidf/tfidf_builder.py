@@ -12,7 +12,9 @@ from datetime import datetime
 from config.db import get_connection, close_connection
 from worker import clean_text_batch_task, index_batch_task, process_incremental_batch_task
 
-ES_URL = os.getenv("ES_URL")
+ES_URL = os.getenv("ES_URL", 'http://localhost:9200')
+print(f'[tfidf_builder.py] Get ES_URL from .env ${ES_URL}')
+
 ES_ARTICLE_INDEX = 'articles'
 TARGET_DIMS = 1000
 

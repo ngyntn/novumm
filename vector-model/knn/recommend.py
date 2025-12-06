@@ -1,10 +1,14 @@
 import math
+import os
 from datetime import datetime, timezone
 
 import numpy as np
 from elasticsearch import Elasticsearch
 
-es = Elasticsearch(['http://localhost:9200'])
+
+ES_URL = os.getenv("ES_URL", 'http://localhost:9200')
+print(f'[Recommend.py] Get ES_URL from .env ${ES_URL}')
+es = Elasticsearch([ES_URL])
 
 ES_ARTICLE_INDEX = 'articles'
 ES_PROFILE_INDEX = 'user_profiles'

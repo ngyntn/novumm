@@ -1,12 +1,13 @@
-
+import os
 
 import joblib
 import numpy as np
 from elasticsearch import Elasticsearch
 from preprocess.eng_processor import clean_text
 
-
-es = Elasticsearch(['http://localhost:9200'])
+ES_URL = os.getenv("ES_URL", 'http://localhost:9200')
+print(f'[Query.py] Get ES_URL from .env ${ES_URL}')
+es = Elasticsearch([ES_URL])
 
 # Load models để transform text query
 vectorizer = joblib.load('model/tfidf_model.pkl')

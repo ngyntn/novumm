@@ -11,8 +11,12 @@ from config.db import get_connection, close_connection
 
 from preprocess.eng_processor import clean_text
 
-REDIS_URL = os.getenv("REDIS_URL")
-ES_URL = os.getenv("ES_URL")
+REDIS_URL = os.getenv("REDIS_URL", 'redis://localhost:6379')
+ES_URL = os.getenv("ES_URL", 'http://localhost:9200')
+
+print(f'[Worker.py] Get REDIS_URL from .env ${REDIS_URL}')
+print(f'[Worker.py] Get ES_URL from .env ${ES_URL}')
+
 ES_ARTICLE_INDEX = 'articles'
 TARGET_DIMS = 1000
 
