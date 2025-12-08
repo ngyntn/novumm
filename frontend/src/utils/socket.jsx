@@ -6,19 +6,14 @@ import { toast } from "react-hot-toast";
 
 let socket;
 
-const getSocketUrl = () => {
-  if (window._env_ && window._env_.VITE_SOCKET_URL) {
-    return window._env_.VITE_SOCKET_URL;
-  }
-  return import.meta.env.VITE_SOCKET_URL;
-};
+
 
 export const initSocket = (userId, dispatch) => {
   if (socket) {
     socket.disconnect();
   }
 
-  const SOCKET_URL = getSocketUrl();
+  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
   socket = io(SOCKET_URL, {
     // transports: ["websocket"],
