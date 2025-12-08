@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { loginUser } from '../api/authapi';
+import { loginUser } from '../api/authApi';
 import { fetchUserProfile, fetchCurrentUser, toggleFollow, updateUserProfile } from '../api/userApi';
 import { fetchFeedNews, fetchUserNews } from '../api/articleApi';
 

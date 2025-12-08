@@ -15,11 +15,19 @@ from tfidf.tfidf_builder import index_articles_full_job, index_articles_incremen
 
 app = Flask(__name__)
 
+FULL_JOB_INTERVAL = int(os.getenv("FULL_JOB_INTERVAL", 86400))
+INCRE_JOB_INTERVAL = int(os.getenv("INCRE_JOB_INTERVAL", 3600))
+PROFILE_JOB_INTERVAL = int(os.getenv("PROFILE_JOB_INTERVAL", 3600))
+
+print(f'[app.py] Get FULL_JOB_INTERVAL from .env ${FULL_JOB_INTERVAL}')
+print(f'[app.py] Get INCRE_JOB_INTERVAL from .env ${INCRE_JOB_INTERVAL}')
+print(f'[app.py] Get PROFILE_JOB_INTERVAL from .env ${PROFILE_JOB_INTERVAL}')
+
 scheduler = BackgroundScheduler()
 
-scheduler.add_job(index_articles_full_job, 'interval', seconds=86400, id='full_index_job', max_instances=1, coalesce=True) # 1 day
-scheduler.add_job(index_articles_incremental_job, 'interval', seconds=3600, id='incremental_index_job', max_instances=1, coalesce=True) # 1 hour
-scheduler.add_job(profile_update_job,'interval', seconds=3600, id='profile_job', max_instances=1, coalesce=True) # 1 hour
+scheduler.add_job(index_articles_full_job, 'interval', seconds=FULL_JOB_INTERVAL, id='full_index_job', max_instances=1, coalesce=True) # 1 day
+scheduler.add_job(index_articles_incremental_job, 'interval', seconds=INCRE_JOB_INTERVAL, id='incremental_index_job', max_instances=1, coalesce=True) # 1 hour
+scheduler.add_job(profile_update_job,'interval', seconds=PROFILE_JOB_INTERVAL, id='profile_job', max_instances=1, coalesce=True) # 1 hour
 
 scheduler.start()
 

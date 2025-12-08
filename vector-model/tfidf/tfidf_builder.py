@@ -57,6 +57,7 @@ def update_db_flag_worker(ids):
 
 
 def index_articles_full_job():
+    print(f"[{datetime.now()}] Running full articles job.")
     try:
         get_connection()
         if not index_lock.acquire(blocking=False):
@@ -70,8 +71,9 @@ def index_articles_full_job():
                 print(f"{[datetime.now()]} No articles found")
                 return
 
-            es.delete_by_query(index=ES_ARTICLE_INDEX, body={"query": {"match_all": {}}})
-            print(f"[{datetime.now()}] Cleared old data in ES.")
+            if es.indices.exists(index=ES_ARTICLE_INDEX):
+                print(f"[{datetime.now()}] Index '{ES_ARTICLE_INDEX}' exists. Clearing old data...")
+                es.delete_by_query(index=ES_ARTICLE_INDEX, body={"query": {"match_all": {}}})
 
             BATCH_SIZE = 200
             raw_contents = [a['content'] for a in articles]
@@ -139,7 +141,7 @@ def index_articles_full_job():
         close_connection()
 
 def index_articles_incremental_job():
-
+    print(f"[{datetime.now()}] Running incremental articles job.")
     try:
         get_connection()
         if not index_lock.acquire(blocking=False):
