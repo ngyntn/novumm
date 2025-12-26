@@ -597,6 +597,67 @@ const updateReadAction = async (userId, articleIdStr) => {
   await interactionRepository.recordReadAction(userId, articleId);
 }
 
+const getMyArticles = async (userId, { page = 1, limit = 10, search = '' }) => {
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  if (page < 1 || limit < 1) {
+    throw new BadRequestError('Invalid pagination parameters');
+  }
+
+  const [articles, total] = await Promise.all([
+    articleRepository.findArticlesByUser(userId, {
+      search,
+      skip,
+      take,
+      includePrivate: true, // For own articles, include all statuses except deleted
+    }),
+    articleRepository.countArticlesByUser(userId, { search, includePrivate: true }),
+  ]);
+
+  if (total === 0) {
+    return { articles: [], total: 0, page, limit, totalPages: 0 };
+  }
+
+  const articleDtos = articles.map((article) => new ArticleDTO(article));
+  const totalPages = Math.ceil(total / limit);
+
+  return { articles: articleDtos, total, page, limit, totalPages };
+};
+
+const getUserArticles = async (currentUserId, targetUserId, { page = 1, limit = 10, search = '' }) => {
+  const skip = (page - 1) * limit;
+  const take = limit;
+
+  if (page < 1 || limit < 1) {
+    throw new BadRequestError('Invalid pagination parameters');
+  }
+
+  const targetUser = await userRepository.findUserById(targetUserId);
+  if (!targetUser) {
+    throw new NotFoundError('User not found');
+  }
+
+  const [articles, total] = await Promise.all([
+    articleRepository.findArticlesByUser(targetUserId, {
+      search,
+      skip,
+      take,
+      includePrivate: false, // For other users, only public
+    }),
+    articleRepository.countArticlesByUser(targetUserId, { search, includePrivate: false }),
+  ]);
+
+  if (total === 0) {
+    return { articles: [], total: 0, page, limit, totalPages: 0 };
+  }
+
+  const articleDtos = articles.map((article) => new ArticleDTO(article));
+  const totalPages = Math.ceil(total / limit);
+
+  return { articles: articleDtos, total, page, limit, totalPages };
+};
+
 module.exports = {
   createArticle,
   updateArticle,
@@ -614,4 +675,6 @@ module.exports = {
   updateFeaturedArticles,
   getRecommendedArticlesV2,
   updateReadAction,
+  getMyArticles,
+  getUserArticles,
 };

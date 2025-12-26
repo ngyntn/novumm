@@ -3,7 +3,7 @@ const userRepository = require('../repositories/user.repository');
 const redisClient = require('../config/redis.config');
 const logger = require('../utils/logger');
 const { generateAccessToken,generateRefreshToken, verifyRefreshToken } = require('../utils/jwt.util');
-const {UnauthorizedError,  NotFoundError, ConflictError, BadRequestError} = require("../utils/AppError");
+const {UnauthorizedError,  NotFoundError, ConflictError, BadRequestError, ForbiddenError} = require("../utils/AppError");
 const sendEmail = require("../utils/email.utils");
 
 
@@ -40,6 +40,10 @@ const login = async ({ email, password }) => {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
         throw new UnauthorizedError('Invalid credentials');
+    }
+
+    if (user.isActive === false) {
+        throw new ForbiddenError('This account is forbidden')
     }
     const accessToken = await generateAccessToken(user);
     const refreshToken = await generateRefreshToken(user);

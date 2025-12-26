@@ -133,6 +133,12 @@ const interactArticle = z.object({
   }),
 });
 
+const paginationSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().default(10),
+  search: z.string().optional().default(''),
+});
+
 module.exports = {
   createArticle,
   updateArticle,
@@ -144,4 +150,5 @@ module.exports = {
   getRelatedArticles,
   getAuthorArticles,
   interactArticle,
+  paginationSchema,
 };

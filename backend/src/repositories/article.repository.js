@@ -422,7 +422,62 @@ const findNovelArticlesByTags = async (articleIds, tagIds) => {
   return ids.map(i => i.article_id);
 }
 
+const countArticles = async () => prisma.article.count();
 
+const getArticles7Days = async () => {
+  return prisma.article.groupBy({
+    by: ['createdAt'],
+    _count: true,
+    where: { createdAt: { gte: new Date(new Date().setDate(new Date().getDate() - 7)) } },
+  });
+};
+
+const updateModerationStatus = async(articleId, status, reason, tx) => {
+  return tx.article.update({
+    where : {
+      id : articleId
+    },
+    data : {
+      moderationStatus: status,
+      violationReason: reason
+    }
+  });
+}
+
+const findArticlesByUser = async (userId, { search = '', skip = 0, take = 10, includePrivate = false }) => {
+  const whereClause = {
+    authorId: userId,
+    title: search ? { contains: search } : undefined,
+    moderationStatus: includePrivate
+        ? { not: 'deleted' }
+        : 'public',
+  };
+
+  return prisma.article.findMany({
+    where: whereClause,
+    skip,
+    take,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      author: {
+        select: { id: true, fullName: true, avatarUrl: true },
+      },
+      // Include more relations if needed, e.g., tags
+    },
+  });
+};
+
+const countArticlesByUser = async (userId, { search = '', includePrivate = false }) => {
+  const whereClause = {
+    authorId: userId,
+    title: search ? { contains: search } : undefined,
+    moderationStatus: includePrivate
+        ? { not: 'deleted' }
+        : 'public',
+  };
+
+  return prisma.article.count({ where: whereClause });
+};
 
 
 module.exports = {
@@ -441,4 +496,9 @@ module.exports = {
   statArticles,
   getUserPreferenceTags,
   findNovelArticlesByTags,
+  countArticles,
+  getArticles7Days,
+  updateModerationStatus,
+  findArticlesByUser,
+  countArticlesByUser,
 };

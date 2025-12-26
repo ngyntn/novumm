@@ -8,7 +8,7 @@ const loggerMiddleware = require('./src/middlewares/logger.middleware');
 const {initWebSocket} = require('./src/utils/websocket.js');
 const http = require('http');
 
-const mainApiRouter = require('./src/routes/');
+const mainApiRouter = require('./src/routes');
 const {createServer} = require("node:http");
 const app = express();
 const server = http.createServer(app);
@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
 
 
-app.use('/api/v1', mainApiRouter);
+app.use('/api', mainApiRouter);
 
 // Error handler must be last
 app.use(errorMiddleware);

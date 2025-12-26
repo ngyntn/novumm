@@ -130,8 +130,6 @@ const getSearchArticles = async (req, res, next) => {
 
 
 
-
-
 const getFeedArticles = async (req, res, next) => {
   try {
     const { articles, pagination } = await articleService.getFeedArticles(
@@ -267,7 +265,28 @@ const read = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Cập nhật thành công.", null));
 });
 
+const getMyArticles = async (req, res, next) => {
+  try {
+    const userId = req.user.id; // Assuming authMiddleware sets req.user
+    const { page, limit, search } = req.query;
+    const articles = await articleService.getMyArticles(userId, { page, limit, search });
+    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', articles));
+  } catch (error) {
+    next(error);
+  }
+};
 
+const getUserArticles = async (req, res, next) => {
+  try {
+    const userId = req.user.id; // For potential authorization checks if needed
+    const targetUserId = parseInt(req.params.id, 10);
+    const { page, limit, search } = req.query;
+    const articles = await articleService.getUserArticles(userId, targetUserId, { page, limit, search });
+    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', articles));
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createArticle,
@@ -284,4 +303,6 @@ module.exports = {
   toggleLike,
   toggleBookmark,
   read,
+  getMyArticles,
+  getUserArticles
 };
