@@ -85,10 +85,18 @@ class ListArticlesDTO {
   }
 }
 
+class ListArticlesDTOV2 {
+  constructor(bookmarkArticles, nextCursor = null) {
+    this.articles = bookmarkArticles.map(b => new ArticleSummaryDTO(b));
+    this.nextCursor = nextCursor;
+  }
+}
+
 module.exports = {
   ArticleDetailDTO,
   ArticleSummaryDTO,
   ArticleCompactDTO,
   AuthorDTO,
-  ListArticlesDTO
+  ListArticlesDTO,
+  ListArticlesDTOV2
 };

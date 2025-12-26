@@ -479,7 +479,50 @@ const countArticlesByUser = async (userId, { search = '', includePrivate = false
   return prisma.article.count({ where: whereClause });
 };
 
+const findArticlesByUserV2 = async (userId, { search = '', cursor, take = 10, includePrivate = false }) => {
+  const where = {
+    authorId: userId,
+    ...(search && {
+      OR: [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+      ],
+    }),
+    moderationStatus: includePrivate ? { not: 'deleted' } : 'public',
+  };
 
+  const articles = await prisma.article.findMany({
+    where,
+    take: Number(take),
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    orderBy: { id: 'desc' },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      content: true, // Thêm nếu DTO cần
+      createdAt: true,
+      thumbnailUrl: true,
+      author: {
+        select: { id: true, fullName: true, avatarUrl: true }
+      },
+      articleTags: {
+        select: {
+          tag: { select: { id: true, name: true } }
+        },
+      },
+      _count: {
+        select: {
+          articleLikes: true,
+          comments: true
+        }
+      }
+    },
+  });
+
+  return articles; // Trả về mảng [ {id, title...}, {...} ]
+};
 module.exports = {
   create,
   update,
@@ -501,4 +544,5 @@ module.exports = {
   updateModerationStatus,
   findArticlesByUser,
   countArticlesByUser,
+  findArticlesByUserV2
 };

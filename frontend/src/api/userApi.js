@@ -48,14 +48,28 @@ export const toggleFollow = createAsyncThunk(
 
 export const updateUserProfile = createAsyncThunk(
     'user/updateUserProfile',
-    async (formData, { rejectWithValue }) => { // (Giả sử dùng formData cho avatar)
+    async (updateData, { rejectWithValue }) => { 
         try {
-            const response = await api.put('/users/profile', formData, {
-                 headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            return response.data.data; // Trả về user đã update
+            // Gửi dữ liệu dưới dạng JSON (mặc định của axios là JSON nếu không set header khác)
+            // updateData sẽ có cấu trúc: { fullName, avatarUrl, bio }
+            const response = await api.patch('/users/me', updateData);
+            return response.data.data; 
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || error.message);
         }
     }
 );
+
+// Hàm này sẽ được gọi trực tiếp trong Component để lấy URL ảnh
+export const uploadMediaApi = async (file) => {
+    const formData = new FormData();
+    formData.append('media_file', file); // Khớp với uploadMedia.single("media_file") ở BE
+
+    const response = await api.post('/articles/upload-media', formData, {
+        headers: { 
+            'Content-Type': 'multipart/form-data' 
+        }
+    });
+    // Giả sử BE của bạn trả về { data: { url: "..." } } hoặc tương đương
+    return response.data; 
+};

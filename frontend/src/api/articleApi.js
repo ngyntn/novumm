@@ -238,3 +238,39 @@ export const readArticle = createAsyncThunk(
         }
     }
 )
+
+export const fetchArticlesByTab = createAsyncThunk(
+    'article/fetchArticlesByTab',
+    async ({ tab, userId, isOwnProfile, cursor = null }, { rejectWithValue }) => {
+        try {
+            let endpoint = '';
+            switch (tab) {
+                case 'posts':
+                    endpoint = isOwnProfile ? '/users/me/articles' : `/users/${userId}/articles`;
+                    break;
+                case 'liked':
+                    endpoint = isOwnProfile ? '/users/me/liked-articles' : `/users/${userId}/liked-articles`;
+                    break;
+                case 'bookmarked':
+                    endpoint = isOwnProfile ? '/users/me/bookmark-articles' : `/users/${userId}/bookmark-articles`;
+                    break;
+                default:
+                    endpoint = `/users/${userId}/articles`;
+            }
+
+            const response = await api.get(endpoint, {
+                params: { 
+                    limit: 10, 
+                    cursor: cursor // Gửi ID của bài viết cuối cùng lên
+                }
+            });
+            
+            return {
+                tab,
+                data: response.data.data // Trả về đúng { articles, nextCursor }
+            };
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || error.message);
+        }
+    }
+);

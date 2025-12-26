@@ -1,4 +1,5 @@
 const articleRepository = require("../repositories/article.repository");
+const userRepository = require("../repositories/user.repository");
 const interactionRepository = require("../repositories/interaction.repopsitory");
 const slugify = require("../utils/slugify");
 const {
@@ -597,65 +598,19 @@ const updateReadAction = async (userId, articleIdStr) => {
   await interactionRepository.recordReadAction(userId, articleId);
 }
 
-const getMyArticles = async (userId, { page = 1, limit = 10, search = '' }) => {
-  const skip = (page - 1) * limit;
-  const take = limit;
+// Hàm getUserArticles sửa tương tự
+const getUserArticles = async (userId, { limit = 10, cursor, search }) => {
 
-  if (page < 1 || limit < 1) {
-    throw new BadRequestError('Invalid pagination parameters');
-  }
+  const articles = await articleRepository.findArticlesByUserV2(userId, {
+    search,
+    cursor,
+    take: limit,
+    includePrivate: false,
+  });
 
-  const [articles, total] = await Promise.all([
-    articleRepository.findArticlesByUser(userId, {
-      search,
-      skip,
-      take,
-      includePrivate: true, // For own articles, include all statuses except deleted
-    }),
-    articleRepository.countArticlesByUser(userId, { search, includePrivate: true }),
-  ]);
+  const nextCursor = articles.length === limit ? articles[articles.length - 1].id : null;
 
-  if (total === 0) {
-    return { articles: [], total: 0, page, limit, totalPages: 0 };
-  }
-
-  const articleDtos = articles.map((article) => new ArticleDTO(article));
-  const totalPages = Math.ceil(total / limit);
-
-  return { articles: articleDtos, total, page, limit, totalPages };
-};
-
-const getUserArticles = async (currentUserId, targetUserId, { page = 1, limit = 10, search = '' }) => {
-  const skip = (page - 1) * limit;
-  const take = limit;
-
-  if (page < 1 || limit < 1) {
-    throw new BadRequestError('Invalid pagination parameters');
-  }
-
-  const targetUser = await userRepository.findUserById(targetUserId);
-  if (!targetUser) {
-    throw new NotFoundError('User not found');
-  }
-
-  const [articles, total] = await Promise.all([
-    articleRepository.findArticlesByUser(targetUserId, {
-      search,
-      skip,
-      take,
-      includePrivate: false, // For other users, only public
-    }),
-    articleRepository.countArticlesByUser(targetUserId, { search, includePrivate: false }),
-  ]);
-
-  if (total === 0) {
-    return { articles: [], total: 0, page, limit, totalPages: 0 };
-  }
-
-  const articleDtos = articles.map((article) => new ArticleDTO(article));
-  const totalPages = Math.ceil(total / limit);
-
-  return { articles: articleDtos, total, page, limit, totalPages };
+  return { articles, nextCursor };
 };
 
 module.exports = {
@@ -675,6 +630,5 @@ module.exports = {
   updateFeaturedArticles,
   getRecommendedArticlesV2,
   updateReadAction,
-  getMyArticles,
   getUserArticles,
 };

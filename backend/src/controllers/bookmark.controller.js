@@ -10,7 +10,6 @@ const getBookmarkArticles = async (req, res, next) => {
         const userId = parseInt(req.params.id);
         const paginationDTO = new PaginationDTO(req.query);
         const result = await bookmarkService.getBookmarkArticles(userId, paginationDTO);
-
         const response = new ListArticlesDTO(result.articles, result.nextCursor);
 
         res.status(200)

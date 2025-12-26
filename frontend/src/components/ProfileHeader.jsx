@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { toggleFollow } from '../api/userApi';
 import FollowListModal from './FollowListModal';
 
-const ProfileHeader = ({ }) => {
+const ProfileHeader = () => {
     const dispatch = useDispatch();
     const { currentUser } = useSelector((state) => state.user);
     const { data: user } = useSelector((state) => state.user.profile);
@@ -14,6 +14,11 @@ const ProfileHeader = ({ }) => {
         title: '',
         userIds: [],
     });
+
+
+    if (!user) {
+        return null; 
+    }
 
     const handleOpenModal = (title, userIds) => {
         if (userIds && userIds.length > 0) {
@@ -25,14 +30,14 @@ const ProfileHeader = ({ }) => {
         setModalConfig({ isOpen: false, title: '', userIds: [] });
     };
 
-    const isCurrentUser = currentUser?.id === user.id;
+    // Sử dụng Optional Chaining để an toàn tuyệt đối
+    const isCurrentUser = currentUser?.id === user?.id;
 
     const handleFollow = () => {
         if (!currentUser) {
             alert('Bạn cần đăng nhập để thực hiện chức năng này');
             return;
         }
-        console.log("Toggling follow for user:", user.id);
         dispatch(toggleFollow({ isFollowing: user.isFollowing, targetUser: user.id }));
     };
 
@@ -41,18 +46,18 @@ const ProfileHeader = ({ }) => {
             <div className="w-full max-w-4xl mx-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                     <img
-                        src={user.avatarUrl}
+                        src={user.avatarUrl || 'https://via.placeholder.com/150'}
                         alt={user.fullName}
                         className="w-28 h-28 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
                     />
                     <div className="flex-1 text-center sm:text-left">
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{user.fullName}</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">{user.bio}</p>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">{user.bio || "Chưa có tiểu sử"}</p>
                         
                         <div className="flex justify-center sm:justify-start gap-6 mt-4 text-base">
                             <div 
                                 className="text-center cursor-pointer group" 
-                                onClick={() => handleOpenModal('Người theo dõi', user.totalFollowers)}
+                                onClick={() => handleOpenModal('Người theo dõi', user.followers)} // Đảm bảo key này đúng với BE
                             >
                                 <span className="font-semibold text-gray-800 dark:text-gray-200">{user.totalFollowers || 0}</span>
                                 <span className="text-gray-500 dark:text-gray-400 ml-1 group-hover:underline">Người theo dõi</span>

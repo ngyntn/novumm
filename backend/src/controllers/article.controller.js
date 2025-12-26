@@ -1,8 +1,9 @@
 const ApiResponse = require("../utils/ApiResponse");
 const articleService = require("../services/article.service");
-const { ArticleDetailDTO, ArticleSummaryDTO, ArticleCompactDTO } = require("../dtos/article.dto");
+const { ArticleDetailDTO, ArticleSummaryDTO, ArticleCompactDTO, ListArticlesDTOV2} = require("../dtos/article.dto");
 const asyncHandler = require("../utils/asyncHandler");
 const { BadRequestError } = require("../utils/AppError");
+const {PaginationDTO} = require("../dtos/user.dto");
 
 const createArticle = async (req, res, next) => {
   try {
@@ -267,10 +268,13 @@ const read = asyncHandler(async (req, res) => {
 
 const getMyArticles = async (req, res, next) => {
   try {
-    const userId = req.user.id; // Assuming authMiddleware sets req.user
-    const { page, limit, search } = req.query;
-    const articles = await articleService.getMyArticles(userId, { page, limit, search });
-    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', articles));
+    const userId = req.user.id ;
+    console.log("Fetching articles of user with id:", userId);
+    const paginationDTO = new PaginationDTO(req.query);
+    const result = await articleService.getUserArticles(userId, paginationDTO);
+    console.log(result);
+    const response = new ListArticlesDTOV2(result.articles, result.nextCursor);
+    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', response));
   } catch (error) {
     next(error);
   }
@@ -278,11 +282,11 @@ const getMyArticles = async (req, res, next) => {
 
 const getUserArticles = async (req, res, next) => {
   try {
-    const userId = req.user.id; // For potential authorization checks if needed
-    const targetUserId = parseInt(req.params.id, 10);
-    const { page, limit, search } = req.query;
-    const articles = await articleService.getUserArticles(userId, targetUserId, { page, limit, search });
-    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', articles));
+    const userId = parseInt(req.params.id);
+    const paginationDTO = new PaginationDTO(req.query);
+    const result = await articleService.getUserArticles(userId, paginationDTO);
+    const response = new ListArticlesDTOV2(result.articles, result.nextCursor);
+    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', response));
   } catch (error) {
     next(error);
   }

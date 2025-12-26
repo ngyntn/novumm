@@ -41,7 +41,7 @@ router.use('/:id', followRouter);
 router.use('/:id', bookmarkRouter);
 router.use('/:id', likeRouter);
 
-router.get('/me/articles', authMiddleware, validateMiddleware(articleValidation.paginationSchema), articleController.getMyArticles);
-router.get('/:id/articles', authMiddleware, validateMiddleware(articleValidation.paginationSchema), articleController.getUserArticles);
+router.get('/me/articles', authMiddleware, validateMiddleware(userValidation.paginationSchema), articleController.getMyArticles);
+router.get('/:id/articles', authMiddleware, validateMiddleware(userValidation.paginationSchema), articleController.getUserArticles);
 
 module.exports = router;
