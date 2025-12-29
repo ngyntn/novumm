@@ -11,7 +11,7 @@ const getFollowers = async (req, res, next) => {
         const result = await followService.getFollowers(userId, targetId, paginationDTO);
 
         const response = new ListUserDTO(
-            result.followers.map(u => new UserSummaryDTO(u.follower)),
+            result.followers.map(u => new UserSummaryDTO(u)),
             result.nextCursor
         );
 
@@ -29,7 +29,7 @@ const getFollowing = async (req, res, next) => {
         const paginationDTO = new PaginationDTO(req.query);
         const result = await followService.getFollowing(userId, targetId, paginationDTO);
         const response = new ListUserDTO(
-            result.following.map(u => new UserSummaryDTO(u.followed)),
+            result.following.map(u => new UserSummaryDTO(u)),
             result.nextCursor
         );
 
@@ -47,7 +47,7 @@ const getMyFollowers = async (req, res, next) => {
         const result = await followService.getFollowers(userId, userId, paginationDTO);
 
         const response = new ListUserDTO(
-            result.followers.map(u => new UserSummaryDTO(u.follower)),
+            result.followers.map(u => new UserSummaryDTO(u)),
             result.nextCursor
         );
 
@@ -65,7 +65,7 @@ const getMyFollowing = async (req, res, next) => {
         const result = await followService.getFollowing(userId, userId, paginationDTO);
         console.log(result)
         const response = new ListUserDTO(
-            result.following.map(u => new UserSummaryDTO(u.followed)),
+            result.following.map(u => new UserSummaryDTO(u)),
             result.nextCursor
         );
 

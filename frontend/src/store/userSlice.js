@@ -99,23 +99,32 @@ const userSlice = createSlice({
                 state.profile.followList.status = 'failed';
             })
 
-            // --- Xử lý Follow/Unfollow ---
             .addCase(toggleFollow.fulfilled, (state, action) => {
-                const { action: actType } = action.payload;
-                if (!state.profile.data) return;
+                // Lấy thông tin từ tham số truyền vào action (meta.arg)
+                const { targetUser, isFollowing } = action.meta.arg; 
+                const newStatus = !isFollowing;
 
-                const isFollow = actType === 'follow';
-                state.profile.data = {
-                    ...state.profile.data,
-                    isFollowing: isFollow,
-                    totalFollowers: (state.profile.data.totalFollowers || 0) + (isFollow ? 1 : -1)
-                };
+                // --- CẬP NHẬT 1: Cập nhật số lượng hiển thị trên Profile Header ---
+                // Kiểm tra nếu người vừa được tương tác chính là người đang hiển thị Profile
+                if (state.profile.data && Number(state.profile.data.id) === Number(targetUser)) {
+                    state.profile.data.isFollowing = newStatus;
 
-                // Tùy chọn: Cập nhật trạng thái nút Follow của user đó ngay trong Modal nếu đang mở
-                const targetId = action.meta.arg.targetUser;
-                const userInList = state.profile.followList.users.find(u => u.id === targetId);
+                    // Cập nhật số lượng Followers hiển thị ngoài Header
+                    if (newStatus) {
+                        // Nếu vừa nhấn Follow -> Tăng 1
+                        state.profile.data.totalFollowers = (state.profile.data.totalFollowers || 0) + 1;
+                    } else {
+                        // Nếu vừa nhấn Unfollow -> Giảm 1 (không để âm)
+                        state.profile.data.totalFollowers = Math.max(0, (state.profile.data.totalFollowers || 0) - 1);
+                    }
+                }
+
+                // --- CẬP NHẬT 2: Cập nhật trạng thái nút bấm ngay trong Modal ---
+                const userInList = state.profile.followList.users.find(
+                    (u) => Number(u.id) === Number(targetUser)
+                );
                 if (userInList) {
-                    userInList.isFollowing = isFollow;
+                    userInList.isFollowing = newStatus;
                 }
             })
 
@@ -127,6 +136,7 @@ const userSlice = createSlice({
                     state.profile.data = { ...state.profile.data, ...action.payload };
                 }
             });
+            
     },
 });
 

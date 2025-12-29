@@ -26,6 +26,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import ContentManagement from "./pages/admin/ContentManagement";
 import ReportManagement from "./pages/admin/ReportManagement";
+import ForgotPassword from "./pages/ForgotPassword";
 // import { fetchCurrentUser } from "./api/userApi.js";
 import { loadUserFromStorage } from "./store/userSlice";
 import Notifications from "./pages/Notifications";
@@ -100,6 +101,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         {/* Trang chi tiết bài viết vẫn nên công khai để chia sẻ */}
 
         <Route element={<ProtectedLayout />}>

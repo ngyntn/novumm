@@ -9,7 +9,10 @@ function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const dispatch = useDispatch();
+  
+  // Lấy status và error từ state 'user' trong Redux
   const { status, error: reduxError } = useSelector((state) => state.user);
+  const isLoading = status === "loading";
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,6 +29,7 @@ function Login() {
         navigate("/");
       })
       .catch((err) => {
+        // Lỗi đã được xử lý trong extraReducers của userSlice và lưu vào reduxError
         console.error("Đăng nhập thất bại:", err);
       });
   };
@@ -54,7 +58,13 @@ function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* {error && <p className="text-red-500 text-sm text-center">{error}</p>} */}
+            
+            {/* HIỂN THỊ THÔNG BÁO LỖI TẠI ĐÂY */}
+            {reduxError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative text-sm text-center">
+                {reduxError}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -86,19 +96,24 @@ function Login() {
 
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition mt-2"
+              disabled={isLoading}
+              className={`w-full text-white py-2 rounded-lg font-semibold transition mt-2 ${
+                isLoading 
+                ? "bg-indigo-400 cursor-not-allowed" 
+                : "bg-indigo-600 hover:bg-indigo-700"
+              }`}
             >
-              Đăng nhập
+              {isLoading ? "Đang xử lý..." : "Đăng nhập"}
             </button>
           </form>
 
           <div className="text-center mt-4">
-            <a
-              href="#"
-              className="text-sm text-gray-500 dark:text-gray-400 hover:underline"
-            >
-              Quên mật khẩu?
-            </a>
+              <Link
+                  to="/forgot-password"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:underline"
+                >
+                  Quên mật khẩu?
+              </Link>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
             Bạn chưa có tài khoản?{" "}

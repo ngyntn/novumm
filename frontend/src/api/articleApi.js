@@ -264,7 +264,7 @@ export const fetchArticlesByTab = createAsyncThunk(
                     cursor: cursor // Gửi ID của bài viết cuối cùng lên
                 }
             });
-            
+            console.log("Fetched articles for tab:", tab, response.data.data);
             return {
                 tab,
                 data: response.data.data // Trả về đúng { articles, nextCursor }

@@ -32,12 +32,17 @@ export const toggleFollow = createAsyncThunk(
     async ({ targetUser, isFollowing }, { rejectWithValue }) => { // Đơn giản hóa logic
         try {
             // Gửi ID user cần follow/unfollow, BE sẽ tự xử lý
-            const action = isFollowing ? 'unfollow' : 'follow';
-            const response = await api.post(`/users/${action}/${targetUser}`);
-            // BE nên trả về user đã được cập nhật
-            console.log("Toggle follow response data:", response.data);
+            let response; // Đổi từ const sang let để có thể gán lại giá trị
+            if (isFollowing) {
+                response = await api.delete(`/users/${targetUser}/unfollow`);
+            } else {
+                response = await api.post(`/users/${targetUser}/follow`);
+            }
+            
+            // Trả về dữ liệu để Slice sử dụng
             return {
-                action,
+                targetUser,
+                isFollowing: !isFollowing, 
                 status: response.data.success,
             };
         } catch (error) {

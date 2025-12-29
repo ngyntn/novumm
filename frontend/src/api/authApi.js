@@ -55,3 +55,49 @@ export const verifyOtp = createAsyncThunk(
         }
     }
 );
+
+// fe/src/api/userApi.js
+
+// 1. Gửi OTP: body { email }
+export const requestForgotPasswordOtp = createAsyncThunk(
+    'auth/change-password/send-otp',
+    async ({ email }, { rejectWithValue }) => {
+        try {
+            const response = await axiosPrivate.post('/auth/change-password/send-otp', { email });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Lỗi gửi mã!");
+        }
+    }
+);
+
+// 2. Xác thực OTP: body { email, otp }
+export const verifyForgotPasswordOtp = createAsyncThunk(
+    'auth/change-password/verify-otp',
+    async ({ email, otp }, { rejectWithValue }) => {
+        try {
+            const response = await axiosPrivate.post('/auth/change-password/verify-otp', { email, otp });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Mã xác thực không đúng!");
+        }
+    }
+);
+
+// 3. Đổi mật khẩu: body { email, otp, newPassword }
+export const changeForgotPassword = createAsyncThunk(
+    'auth/change-password',
+    async ({ email, otp, newPassword }, { rejectWithValue }) => {
+        try {
+            // Theo schema của bạn, bước này cần gửi cả email và otp đã xác thực trước đó
+            const response = await axiosPrivate.post('/auth/change-password', { 
+                email, 
+                otp, 
+                newPassword 
+            });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Đổi mật khẩu thất bại!");
+        }
+    }
+);
