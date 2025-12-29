@@ -36,6 +36,25 @@ const getLikedArticles = async (userId, limit, cursor, search) => {
                         select: {
                             tag: { select: { id: true, name: true } }
                         },
+                    },
+                    // ✅ ĐẾM LIKE / COMMENT
+                    _count: {
+                        select: {
+                            articleLikes: true,
+                            comments: true
+                        }
+                    },
+
+                    // ✅ check user đã like chưa
+                    articleLikes: {
+                        where: { userId },
+                        select: { userId: true }
+                    },
+
+                    // ✅ check bookmark
+                    bookmarks: {
+                        where: { userId },
+                        select: { userId: true }
                     }
                 },
             },

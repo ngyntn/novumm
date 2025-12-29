@@ -517,6 +517,18 @@ const findArticlesByUserV2 = async (userId, { search = '', cursor, take = 10, in
           articleLikes: true,
           comments: true
         }
+      },
+
+      // ✅ check user đã like chưa
+      articleLikes: {
+        where: { userId },
+        select: { userId: true }
+      },
+
+      // ✅ check bookmark
+      bookmarks: {
+        where: { userId },
+        select: { userId: true }
       }
     },
   });

@@ -9,9 +9,7 @@ const getLikedArticles = async (req, res, next) => {
         const userId = parseInt(req.params.id);
         const paginationDTO = new PaginationDTO(req.query);
         const result = await likeService.getLikedArticles(userId, paginationDTO);
-
         const response = new ListArticlesDTO(result.articles, result.nextCursor);
-
         res.status(200)
             .json(new ApiResponse(true, 'Liked articles fetched', response));
     } catch (error) {

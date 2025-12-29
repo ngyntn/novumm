@@ -10,7 +10,10 @@ const getBookmarkArticles = async (req, res, next) => {
         const userId = parseInt(req.params.id);
         const paginationDTO = new PaginationDTO(req.query);
         const result = await bookmarkService.getBookmarkArticles(userId, paginationDTO);
+        console.log(JSON.stringify(result, null, 2));
         const response = new ListArticlesDTO(result.articles, result.nextCursor);
+        console.log("***************************************")
+        console.log(JSON.stringify(response, null, 2));
 
         res.status(200)
             .json(new ApiResponse(true, 'Bookmark articles fetched', response));
