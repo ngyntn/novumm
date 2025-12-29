@@ -12,26 +12,22 @@ const ProfileHeader = () => {
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
         title: '',
-        userIds: [],
+        type: '', // 'followers' hoặc 'following'
     });
 
+    if (!user) return null; 
 
-    if (!user) {
-        return null; 
-    }
-
-    const handleOpenModal = (title, userIds) => {
-        if (userIds && userIds.length > 0) {
-            setModalConfig({ isOpen: true, title, userIds });
-        }
+    const handleOpenModal = (title, type) => {
+        // Chỉ mở modal nếu có số lượng > 0 hoặc đơn giản là mở theo type
+        setModalConfig({ isOpen: true, title, type });
     };
 
     const handleCloseModal = () => {
-        setModalConfig({ isOpen: false, title: '', userIds: [] });
+        setModalConfig({ isOpen: false, title: '', type: '' });
     };
 
-    // Sử dụng Optional Chaining để an toàn tuyệt đối
-    const isCurrentUser = currentUser?.id === user?.id;
+    // Ép kiểu Number để so sánh ID chính xác
+    const isMe = Number(currentUser?.id) === Number(user?.id);
 
     const handleFollow = () => {
         if (!currentUser) {
@@ -57,14 +53,14 @@ const ProfileHeader = () => {
                         <div className="flex justify-center sm:justify-start gap-6 mt-4 text-base">
                             <div 
                                 className="text-center cursor-pointer group" 
-                                onClick={() => handleOpenModal('Người theo dõi', user.followers)} // Đảm bảo key này đúng với BE
+                                onClick={() => handleOpenModal('Người theo dõi', 'followers')}
                             >
                                 <span className="font-semibold text-gray-800 dark:text-gray-200">{user.totalFollowers || 0}</span>
                                 <span className="text-gray-500 dark:text-gray-400 ml-1 group-hover:underline">Người theo dõi</span>
                             </div>
                             <div 
                                 className="text-center cursor-pointer group" 
-                                onClick={() => handleOpenModal('Đang theo dõi', user.following)}
+                                onClick={() => handleOpenModal('Đang theo dõi', 'following')}
                             >
                                 <span className="font-semibold text-gray-800 dark:text-gray-200">{user.totalFollowing || 0}</span>
                                 <span className="text-gray-500 dark:text-gray-400 ml-1 group-hover:underline">Đang theo dõi</span>
@@ -72,7 +68,7 @@ const ProfileHeader = () => {
                         </div>
                     </div>
                     <div className="mt-4 sm:mt-0">
-                        {isCurrentUser ? (
+                        {isMe ? (
                             <Link to="/edit-profile">
                                 <button className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300">
                                     Chỉnh sửa trang cá nhân
@@ -98,7 +94,9 @@ const ProfileHeader = () => {
                 isOpen={modalConfig.isOpen}
                 onClose={handleCloseModal}
                 title={modalConfig.title}
-                userIds={modalConfig.userIds}
+                type={modalConfig.type}
+                userId={user.id}
+                isOwnProfile={isMe}
             />
         </>
     );

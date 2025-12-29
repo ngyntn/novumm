@@ -5,9 +5,10 @@ const ApiResponse = require("../utils/ApiResponse");
 
 const getFollowers = async (req, res, next) => {
     try {
-        const userId =  parseInt(req.params.id);
+        const targetId =  parseInt(req.params.id);
+        const userId = req.user.id;
         const paginationDTO = new PaginationDTO(req.query);
-        const result = await followService.getFollowers(userId, paginationDTO);
+        const result = await followService.getFollowers(userId, targetId, paginationDTO);
 
         const response = new ListUserDTO(
             result.followers.map(u => new UserSummaryDTO(u.follower)),
@@ -24,8 +25,9 @@ const getFollowers = async (req, res, next) => {
 const getFollowing = async (req, res, next) => {
     try {
         const userId = parseInt(req.params.id);
+        const targetId =  parseInt(req.params.id);
         const paginationDTO = new PaginationDTO(req.query);
-        const result = await followService.getFollowing(userId, paginationDTO);
+        const result = await followService.getFollowing(userId, targetId, paginationDTO);
         const response = new ListUserDTO(
             result.following.map(u => new UserSummaryDTO(u.followed)),
             result.nextCursor
@@ -42,7 +44,7 @@ const getMyFollowers = async (req, res, next) => {
     try {
         const userId = req.user.id ;
         const paginationDTO = new PaginationDTO(req.query);
-        const result = await followService.getFollowers(userId, paginationDTO);
+        const result = await followService.getFollowers(userId, userId, paginationDTO);
 
         const response = new ListUserDTO(
             result.followers.map(u => new UserSummaryDTO(u.follower)),
@@ -60,8 +62,8 @@ const getMyFollowing = async (req, res, next) => {
     try {
         const userId =  req.user.id;
         const paginationDTO = new PaginationDTO(req.query);
-        const result = await followService.getFollowing(userId, paginationDTO);
-
+        const result = await followService.getFollowing(userId, userId, paginationDTO);
+        console.log(result)
         const response = new ListUserDTO(
             result.following.map(u => new UserSummaryDTO(u.followed)),
             result.nextCursor

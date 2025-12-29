@@ -73,3 +73,22 @@ export const uploadMediaApi = async (file) => {
     // Giả sử BE của bạn trả về { data: { url: "..." } } hoặc tương đương
     return response.data; 
 };
+
+export const fetchFollowList = createAsyncThunk(
+    'user/fetchFollowList',
+    async ({ type, userId, isOwnProfile, cursor = null }, { rejectWithValue }) => {
+        try {
+            let endpoint = isOwnProfile 
+                ? (type === 'followers' ? '/users/me/followers' : '/users/me/following')
+                : (type === 'followers' ? `/users/${userId}/followers` : `/users/${userId}/following`);
+
+            const response = await api.get(endpoint, {
+                params: { limit: 10, cursor }
+            });
+            return { type, data: response.data.data };
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || error.message);
+        }
+    }
+);
+

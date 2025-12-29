@@ -1,15 +1,27 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { loginUser } from '../api/authApi';
-import { fetchUserProfile, toggleFollow, updateUserProfile } from '../api/userApi';
-import { fetchArticlesByTab } from '../api/articleApi'; // Action mới chúng ta đã thống nhất
+import { 
+    fetchUserProfile, 
+    toggleFollow, 
+    updateUserProfile, 
+    fetchFollowList // Đảm bảo đã import hàm này
+} from '../api/userApi';
+import { fetchArticlesByTab } from '../api/articleApi';
 
 const initialState = {
     currentUser: JSON.parse(localStorage.getItem('currentUser')) || null,
     profile: {
-        data: null, // Thông tin user (name, avatar, bio...)
-        posts: { articles: [], nextCursor: null }, // Danh sách bài viết của user
-        liked: { articles: [], nextCursor: null }, // Danh sách bài viết đã thích
-        bookmarked: { articles: [], nextCursor: null }, // Danh sách bài viết đã lưu
+        data: null,
+        posts: { articles: [], nextCursor: null },
+        liked: { articles: [], nextCursor: null },
+        bookmarked: { articles: [], nextCursor: null },
+        // --- PHẦN THIẾU: Lưu trữ danh sách cho Modal ---
+        followList: { 
+            users: [], 
+            nextCursor: null, 
+            status: 'idle',
+            type: null 
+        },
         status: 'idle',
         error: null,
     },
@@ -51,31 +63,40 @@ const userSlice = createSlice({
                 localStorage.setItem('refreshToken', action.payload.refreshToken.refreshToken);
             })
 
-            // --- Xử lý Lấy Profile User (Thông tin cơ bản) ---
-            .addCase(fetchUserProfile.pending, (state) => { 
-                state.profile.status = 'loading'; 
-            })
+            // --- Xử lý Lấy Profile User ---
             .addCase(fetchUserProfile.fulfilled, (state, action) => { 
                 state.profile.status = 'succeeded'; 
                 state.profile.data = action.payload; 
             })
-            .addCase(fetchUserProfile.rejected, (state, action) => { 
-                state.profile.status = 'failed'; 
-                state.profile.error = action.payload; 
-            })
 
-            // --- Xử lý Lấy Bài Viết Theo Tab (Gộp chung logic DTO) ---
-            .addCase(fetchArticlesByTab.pending, (state) => {
-                state.profile.status = 'loading';
-            })
+            // --- Xử lý Lấy Bài Viết Theo Tab ---
             .addCase(fetchArticlesByTab.fulfilled, (state, action) => {
-                const { tab, data } = action.payload; // data là { articles, nextCursor }
+                const { tab, data } = action.payload;
                 state.profile.status = 'succeeded';
-                
-                // Cập nhật đúng mảng dựa vào tab truyền lên
                 if (tab === 'posts') state.profile.posts = data;
                 else if (tab === 'liked') state.profile.liked = data;
                 else if (tab === 'bookmarked') state.profile.bookmarked = data;
+            })
+
+            // --- PHẦN THIẾU: Xử lý danh sách Follower/Following cho Modal ---
+            .addCase(fetchFollowList.pending, (state) => {
+                state.profile.followList.status = 'loading';
+            })
+            .addCase(fetchFollowList.fulfilled, (state, action) => {
+                const { type, data } = action.payload;
+                state.profile.followList.status = 'succeeded';
+                state.profile.followList.type = type;
+
+                // Nếu có cursor (tải thêm) thì nối mảng, không thì thay mới
+                if (action.meta.arg.cursor) {
+                    state.profile.followList.users = [...state.profile.followList.users, ...data.users];
+                } else {
+                    state.profile.followList.users = data.users;
+                }
+                state.profile.followList.nextCursor = data.nextCursor;
+            })
+            .addCase(fetchFollowList.rejected, (state, action) => {
+                state.profile.followList.status = 'failed';
             })
 
             // --- Xử lý Follow/Unfollow ---
@@ -89,17 +110,19 @@ const userSlice = createSlice({
                     isFollowing: isFollow,
                     totalFollowers: (state.profile.data.totalFollowers || 0) + (isFollow ? 1 : -1)
                 };
+
+                // Tùy chọn: Cập nhật trạng thái nút Follow của user đó ngay trong Modal nếu đang mở
+                const targetId = action.meta.arg.targetUser;
+                const userInList = state.profile.followList.users.find(u => u.id === targetId);
+                if (userInList) {
+                    userInList.isFollowing = isFollow;
+                }
             })
 
             // --- Xử lý Cập nhật Profile ---
             .addCase(updateUserProfile.fulfilled, (state, action) => {
-                // 1. Cập nhật state currentUser để Header thay đổi ngay
                 state.currentUser = { ...state.currentUser, ...action.payload };
-                
-                // 2. Cập nhật localStorage để F5 không mất dữ liệu
                 localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
-                
-                // 3. Nếu đang xem trang profile của chính mình, cập nhật luôn dữ liệu hiển thị
                 if (state.profile.data && (state.profile.data.id === action.payload.id)) {
                     state.profile.data = { ...state.profile.data, ...action.payload };
                 }
