@@ -53,7 +53,7 @@ export default function CreatePost() {
       console.log("Submitting FormData (Debug):", dataToLog);
         const newArticle = await dispatch(createNews(formData)).unwrap();
         console.log("Created Article:", newArticle);
-      toast.success("Tạo bài viết thành công, đang chờ duyệt!");
+      toast.success("Tạo bài viết thành công!");
       navigate(`/news/${newArticle.slug}`);
     } catch (error) {
       toast.error(error || "Tạo bài viết thất bại.");

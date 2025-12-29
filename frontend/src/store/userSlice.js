@@ -66,7 +66,7 @@ const userSlice = createSlice({
             .addCase(logoutUser.fulfilled, (state) => {
                 state.currentUser = null;
                 state.status = 'idle';
-                state.profile = { data: null, news: [], status: 'idle', error: null };
+                state.profile = initialState.profile;
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accessToken');
@@ -76,7 +76,7 @@ const userSlice = createSlice({
                 state.currentUser = null;
                 state.status = 'idle';
                 state.error = action.payload;
-                state.profile = { data: null, news: [], status: 'idle', error: null };
+                state.profile = initialState.profile;
                 localStorage.removeItem('currentUser');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accessToken');

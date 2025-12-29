@@ -356,7 +356,7 @@ const findByAuthor = async (authorId, excludeId, { skip, take }) => {
 };
 
 
-const findMostLikedSince = async (sinceDate) => {
+const findArticlesForScoring = async (sinceDate) => {
   return await prisma.article.findMany({
     where: {
       createdAt: { gte: sinceDate },
@@ -364,6 +364,9 @@ const findMostLikedSince = async (sinceDate) => {
     },
     select: {
       id: true,
+      title: true,    
+      createdAt: true,
+      authorId: true,  
     }
   });
 }
@@ -547,7 +550,7 @@ module.exports = {
   findByIdsV2,
   findRelatedByTags,
   findByAuthor,
-  findMostLikedSince,
+  findArticlesForScoring,
   statArticles,
   getUserPreferenceTags,
   findNovelArticlesByTags,
