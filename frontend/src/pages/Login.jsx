@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../api/authApi";
+import toast from "react-hot-toast";
+
+import background1 from "../assets/background1.png";
 
 function Login() {
   const navigate = useNavigate();
@@ -30,7 +33,8 @@ function Login() {
       })
       .catch((err) => {
         // Lỗi đã được xử lý trong extraReducers của userSlice và lưu vào reduxError
-        console.error("Đăng nhập thất bại:", err);
+          console.error("Đăng nhập thất bại:", err);
+          toast.error(err || "Đăng nhập thất bại.");
       });
   };
 
@@ -40,7 +44,7 @@ function Login() {
       <div
         className="hidden md:flex flex-col justify-center items-center text-white p-12 rounded-r-2xl"
         style={{
-          backgroundImage: `url('src/assets/background1.png')`, 
+          backgroundImage: `url(${background1})`, 
           backgroundSize: "cover", 
           backgroundPosition: "center", 
         }}

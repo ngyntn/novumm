@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { axiosPrivate } from './apiClient';
+import { axiosPrivate, api } from './apiClient';
 
 export const loginUser = createAsyncThunk(
     'auth/login', 
@@ -98,6 +98,18 @@ export const changeForgotPassword = createAsyncThunk(
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Đổi mật khẩu thất bại!");
+        }
+    }
+);
+
+export const logoutUser = createAsyncThunk(
+    'auth/logout',
+    async (_, { rejectWithValue }) => {
+        try {
+            await api.post('/auth/logout');
+            return;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || error.message);
         }
     }
 );

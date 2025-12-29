@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { loginUser } from '../api/authApi';
+import { loginUser, logoutUser } from '../api/authApi';
 import { 
     fetchUserProfile, 
     toggleFollow, 
@@ -61,6 +61,25 @@ const userSlice = createSlice({
                 localStorage.setItem('currentUser', JSON.stringify(action.payload.user));
                 localStorage.setItem('accessToken', action.payload.accessToken.accessToken);
                 localStorage.setItem('refreshToken', action.payload.refreshToken.refreshToken);
+            })
+
+            .addCase(logoutUser.fulfilled, (state) => {
+                state.currentUser = null;
+                state.status = 'idle';
+                state.profile = { data: null, news: [], status: 'idle', error: null };
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('accessToken');
+            })
+            .addCase(logoutUser.rejected, (state, action) => {
+                // Vẫn logout local ngay cả khi API lỗi
+                state.currentUser = null;
+                state.status = 'idle';
+                state.error = action.payload;
+                state.profile = { data: null, news: [], status: 'idle', error: null };
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('accessToken');
             })
 
             // --- Xử lý Lấy Profile User ---

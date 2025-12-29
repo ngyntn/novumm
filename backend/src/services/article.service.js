@@ -554,7 +554,7 @@ const toggleArticleBookmark = async (userId, articleIdStr) => {
 
 const updateFeaturedArticles = async () => {
   const now = new Date();
-  const sinceDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const sinceDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
   // Lấy ra tất cả bài viết trong 24 giờ qua
   logger.info(`Đang lấy bài viết trong 24 giờ qua`);

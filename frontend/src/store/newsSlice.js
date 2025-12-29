@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { logoutUser } from "../api/authApi";
 import {
   fetchRecommendedNews,
   fetchDetailNews,
@@ -458,7 +459,23 @@ const newsSlice = createSlice({
         if (state.item) {
           state.item.commentsCount -= deletedCount;
         }
-      });
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.items = [];
+        state.feed.items = [];
+        state.item = null;
+        state.comments.items = [];
+        state.searchedItems = [];
+        state.page = 1;
+        state.hasMore = true;
+        state.loading = false;
+        state.error = null;
+    })
+    .addCase(logoutUser.rejected, (state) => {
+        state.items = [];
+        state.feed.items = [];
+        state.item = null;
+    });
   },
 });
 

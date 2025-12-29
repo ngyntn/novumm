@@ -72,8 +72,25 @@ const refreshToken = async (refreshToken) => {
 };
 
 const logout = async (userId) => {
+    console.log("Đang logout user:", userId);
     const refreshKey = `user:${userId}:refreshToken`;
     await redisClient.del(refreshKey);
+    console.log("refresh token:", refreshKey, "đã bị xóa.");
+
+    if (userId) {
+        console.log(`[Logout] Đang dọn dẹp cache cho user ${userId}...`);
+        
+        // Xóa danh sách gợi ý (Chứa ID ảo/cũ)
+        await redisClient.del(`user:${userId}:recommended_articles`);
+        
+        // (Tùy chọn) Xóa lịch sử "Đã xem trong phiên" để reset trạng thái
+        // Nếu bạn muốn user đăng nhập lại sẽ thấy lại các bài cũ -> Hãy xóa dòng này
+        // Nếu bạn muốn giữ lịch sử đã đọc -> Đừng xóa dòng này
+        await redisClient.del(`user:${userId}:read_articles`); 
+        
+        console.log(`[Logout] Đã xóa cache recommended_articles và read_articles.`);
+    }
+
     logger.info(`User logged out: ${userId}`);
 };
 
