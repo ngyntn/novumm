@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Bookmark, MessageSquare } from "lucide-react";
+import { Heart, Bookmark, MessageSquare, Eye } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   convertDateTimeToVietnam,
@@ -18,6 +18,8 @@ const NewsCard = ({
   content,
   likesCount,
   commentsCount,
+  bookmarksCount,
+  readsCount,
   isLiked,
   isBookmarked,
   tags = [],
@@ -34,6 +36,8 @@ const NewsCard = ({
   const [currentLikeCount, setCurrentLikeCount] = useState(likesCount || 0);
   const [currentUserReaction, setCurrentUserReaction] = useState(isLiked);
   const [currentIsBookmarked, setCurrentIsBookmarked] = useState(isBookmarked);
+  
+  const [currentBookmarkCount, setCurrentBookmarkCount] = useState(bookmarksCount || 0);
 
   const snippet = createContentSnippet(content, 1200);
 
@@ -41,7 +45,8 @@ const NewsCard = ({
     setCurrentLikeCount(likesCount || 0);
     setCurrentUserReaction(isLiked);
     setCurrentIsBookmarked(isBookmarked);
-  }, [likesCount, isLiked, isBookmarked]);
+    setCurrentBookmarkCount(bookmarksCount || 0);
+  }, [likesCount, isLiked, isBookmarked, bookmarksCount]);
 
   useEffect(() => {
     if (contentRef.current) {
@@ -91,14 +96,17 @@ const NewsCard = ({
     }
 
     const oldState = currentIsBookmarked;
+    const oldCount = currentBookmarkCount;
 
     setCurrentIsBookmarked(!oldState);
+    setCurrentBookmarkCount(!oldState ? oldCount + 1 : oldCount - 1);
 
     try {
       await dispatch(toggleBookmark(id)).unwrap();
     } catch (error) {
       toast.error(error.message || "Lỗi: Không thể lưu bài viết.");
       setCurrentIsBookmarked(oldState);
+      setCurrentBookmarkCount(oldCount);
     }
   };
 
@@ -153,6 +161,13 @@ const NewsCard = ({
 
         {/* --- CỘT BÊN PHẢI (HÀNH ĐỘNG: LIKE, COMMENT, BOOKMARK) --- */}
         <div className="flex-shrink-0 flex items-center space-x-4 px-2 ml-4">
+            {/* Lượt Xem (Reads) - Chỉ hiển thị, không tương tác */}
+          <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400" title="Lượt xem">
+            <Eye className="w-5 h-5" />
+            <p className="text-sm">{convertLikeNumber(readsCount || 0)}</p>
+          </div>
+          
+          {/* Lượt Like */}
           <div className="flex items-center space-x-1" title="Lượt thích">
             <button
               onClick={handleLike}
@@ -172,6 +187,7 @@ const NewsCard = ({
             </p>
           </div>
 
+            {/* Lượt Bình Luận */}
           <div
             className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:cursor-pointer hover:text-indigo-500"
             title="Lượt bình luận"
@@ -181,20 +197,25 @@ const NewsCard = ({
             <p className="text-sm">{convertLikeNumber(commentsCount || 0)}</p>
           </div>
 
-          <button
-            onClick={handleBookmark}
-            className={`p-1 rounded-full transition-colors ${
-              currentIsBookmarked
-                ? "text-indigo-500 hover:bg-indigo-100 dark:hover:bg-gray-800"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-500"
-            }`}
-            title={currentIsBookmarked ? "Bỏ lưu" : "Lưu bài viết"}
-          >
-            <Bookmark
-              className="w-5 h-5"
-              fill={currentIsBookmarked ? "currentColor" : "none"}
-            />
-          </button>
+            {/* Lượt Bookmark */}
+          <div className="flex items-center space-x-1" title="Lượt lưu">
+            <button
+              onClick={handleBookmark}
+              className={`p-1 rounded-full transition-colors ${
+                currentIsBookmarked
+                  ? "text-indigo-500 hover:bg-indigo-100 dark:hover:bg-gray-800"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-500"
+              }`}
+            >
+              <Bookmark
+                className="w-5 h-5"
+                fill={currentIsBookmarked ? "currentColor" : "none"}
+              />
+            </button>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+               {convertLikeNumber(currentBookmarkCount)}
+            </p>
+          </div>
         </div>
       </div>
 

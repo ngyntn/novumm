@@ -640,35 +640,22 @@ const updateFeaturedArticles = async () => {
     const sinceDate = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
     logger.info(`[Gravity] Bắt đầu tính điểm bài viết từ: ${sinceDate.toISOString()}`);
   
-    // 1. Lấy danh sách bài viết (ID, Title, CreatedAt)
-    // (Đảm bảo bạn đã dùng hàm findArticlesForScoring hoặc findMostLikedSince trả về createdAt)
-    const articles = await articleRepository.findArticlesForScoring(sinceDate); 
-  
-    if (!articles || articles.length === 0) {
-      logger.warn('[Gravity] Không tìm thấy bài viết nào để xếp hạng.');
-      return;
-    }
-  
-    // 2. Lấy thống kê tương tác
-    const articleIds = articles.map(a => a.id);
-    const interactionStats = await articleRepository.statArticles(articleIds);
-  
-    // Chuyển stats thành Map để tra cứu nhanh
-    const statsMap = {};
-    interactionStats.forEach(stat => {
-      statsMap[stat.articleId] = stat;
-    });
-  
-    // 3. TÍNH ĐIỂM (CUSTOM GRAVITY ALGORITHM)
-    const scoredArticles = articles.map(article => {
-      const stats = statsMap[article.id] || {};
+    // 1. Lấy danh sách bài viết KÈM SỐ LIỆU (đã được tổng hợp ở bước Repo)
+      const articlesWithStats = await articleRepository.findArticlesForScoring(sinceDate);
+
+      if (!articlesWithStats || articlesWithStats.length === 0) {
+        logger.warn('[Gravity] Không tìm thấy bài viết nào để xếp hạng.');
+        return;
+      }
+
+  // 2. TÍNH ĐIỂM (CUSTOM GRAVITY ALGORITHM)
+    const scoredArticles = articlesWithStats.map(article => {
       
-      // Convert BigInt/Null sang Number để tính toán
-      const likes = Number(stats.likeCount || 0);
-      const comments = Number(stats.commentCount || 0);
-      const bookmarks = Number(stats.bookmarkCount || 0);
-      const reads = Number(stats.readCount || 0);
-      const clicks = Number(stats.clickCount || 0);
+    const likes = Number(article.likeCount || 0);
+    const comments = Number(article.commentCount || 0);
+    const bookmarks = Number(article.bookmarkCount || 0);
+    const reads = Number(article.readCount || 0);
+    const clicks = Number(article.clickCount || 0);
   
       // Tính tổng điểm tương tác (P)
       const points = (likes * WEIGHTS.LIKE) + 
@@ -701,7 +688,7 @@ const updateFeaturedArticles = async () => {
     // Debug Log: Xem Top 5 bài viết và lý do tại sao nó đứng top
     console.log('--- TOP 5 RANKING (WEIGHTED) ---');
     scoredArticles.slice(0, 5).forEach((a, idx) => {
-      console.log(`#${idx + 1} ID:${a.id} Score:${a.score.toFixed(4)} | Pts:${a.points} (L:${a.stats.likes}, C:${a.stats.comments}, B:${a.stats.bookmarks}) | Age:${a.stats.age?.toFixed(1)}h`);
+      console.log(`#${idx + 1} ID:${a.id} Score:${a.score.toFixed(4)} | Pts:${a.points} Clk:${a.stats.clicks}, (R:${a.stats.reads}, L:${a.stats.likes}, C:${a.stats.comments}, B:${a.stats.bookmarks}) | Age:${a.age?.toFixed(1)}h`);
     });
   
     // 5. Lưu vào Redis

@@ -1,4 +1,5 @@
 const prisma = require('../config/db.config');
+const { attachReadCounts } = require("./article.repository");
 
 const countArticleLikes = async (userId) => prisma.articleLike.count({ where: { userId } });
 
@@ -16,7 +17,7 @@ const getLikedArticles = async (userId, limit, cursor, search) => {
     };
 
 
-    return prisma.articleLike.findMany({
+    const articles = await prisma.articleLike.findMany({
         where,
         take: limit,
         cursor: cursor
@@ -31,7 +32,7 @@ const getLikedArticles = async (userId, limit, cursor, search) => {
                     slug: true,
                     createdAt: true,
                     thumbnailUrl: true,
-                    author: { select: { id: true, fullName: true, avatarUrl: true} },
+                    author: { select: { id: true, fullName: true, avatarUrl: true } },
                     articleTags: {
                         select: {
                             tag: { select: { id: true, name: true } }
@@ -41,7 +42,8 @@ const getLikedArticles = async (userId, limit, cursor, search) => {
                     _count: {
                         select: {
                             articleLikes: true,
-                            comments: true
+                            comments: true,
+                            bookmarks: true,
                         }
                     },
 
@@ -59,6 +61,10 @@ const getLikedArticles = async (userId, limit, cursor, search) => {
                 },
             },
         },
-    })
+    });
+
+    await attachReadCounts(articles);
+
+    return articles;
 };
 module.exports = { countArticleLikes, getLikedArticles };

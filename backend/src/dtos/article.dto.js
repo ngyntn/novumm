@@ -29,14 +29,16 @@ class ArticleDetailDTO {
     this.comments = article.comments
       ? article.comments.map((comment) => new CommentDTO(comment))
       : [];
-    this.likesCount = article._count ? article._count.articleLikes : 0;
+      this.likesCount = article._count ? article._count.articleLikes : 0;
+      this.bookmarksCount = article._count ? article._count.bookmarks : 0;
+      this.commentsCount = article._count ? article._count.comments : 0;
+      this.readsCount = article.readsCount || 0;
     this.isLiked = article.articleLikes
       ? article.articleLikes.length > 0
       : false;
     this.isBookmarked = article.bookmarks
       ? article.bookmarks.length > 0
       : false;
-    this.commentsCount = article._count ? article._count.comments : 0;
     this.moderationStatus = article.moderationStatus;
     this.violationReason = article.violationReason || null;
   }
@@ -54,14 +56,16 @@ class ArticleSummaryDTO {
     this.tags = article.articleTags
       ? article.articleTags.map((at) => new TagDTO(at.tag))
       : [];
-    this.likesCount = article._count ? article._count.articleLikes : 0;
+      this.likesCount = article._count ? article._count.articleLikes : 0;
+      this.bookmarksCount = article._count ? article._count.bookmarks : 0; // Mới
+      this.commentsCount = article._count ? article._count.comments : 0;
+      this.readsCount = article.readsCount || 0;
     this.isLiked = article.articleLikes
       ? article.articleLikes.length > 0
       : false;
     this.isBookmarked = article.bookmarks
       ? article.bookmarks.length > 0
       : false;
-    this.commentsCount = article._count ? article._count.comments : 0;
   }
 }
 
