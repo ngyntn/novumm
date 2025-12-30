@@ -24,71 +24,107 @@ const create = async (articleData, tagsToConnect) => {
   });
 };
 
+const attachReadCounts = async (dataList) => {
+    if (!dataList || dataList.length === 0) return dataList;
+  
+    // BƯỚC 1: TẠO DANH SÁCH "REAL ARTICLES" (Dựa trên tham chiếu)
+    // - Nếu là Home: item chính là article.
+    // - Nếu là Like/Bookmark: item.article là article (chúng ta lấy cái bên trong ra).
+    // Vì là object, nên thay đổi 'article' ở đây cũng sẽ thay đổi dataList gốc.
+    const realArticles = dataList.map((item) => {
+      return item.article ? item.article : item;
+    });
+  
+    const articleIds = realArticles.map((a) => a.id);
+  
+    // BƯỚC 2: QUERY DB
+    const readCounts = await prisma.userArticleInteraction.groupBy({
+      by: ['articleId'],
+      where: {
+        articleId: { in: articleIds },
+        action: 'read',
+      },
+      _count: { _all: true },
+    });
+  
+    // Tạo Map để tra cứu nhanh
+    const countMap = {};
+    readCounts.forEach((item) => {
+      countMap[item.articleId] = item._count._all;
+    });
+  
+    // BƯỚC 3: GÁN NGƯỢC LẠI VÀO "REAL ARTICLES"
+    // Quan trọng: Chúng ta loop qua realArticles để gán đúng vào object article
+    realArticles.forEach((article) => {
+      // Nếu article bị null (trường hợp dữ liệu rác), ta bỏ qua
+      if (article) {
+          article.readsCount = countMap[article.id] || 0;
+      }
+    });
+  
+    // BƯỚC 4: TRẢ VỀ DANH SÁCH GỐC
+    // Do tính chất tham chiếu, dataList lúc này đã có readsCount nằm đúng chỗ
+    // Home: [{ id: 1, readsCount: 5 }]
+    // Like: [{ article: { id: 1, readsCount: 5 } }]
+    return dataList;
+  };
+
 const findBySlug = async (userId, slug) => {
-  return prisma.article.findUnique({
-    where: { slug },
-    include: {
-      author: {
-        select: {
-          id: true,
-          fullName: true,
-          avatarUrl: true,
+    const article = await prisma.article.findUnique({
+      where: { slug },
+      include: {
+        author: {
+          select: { id: true, fullName: true, avatarUrl: true },
         },
-      },
-      articleTags: {
-        include: {
-          tag: true,
+        articleTags: { include: { tag: true } },
+        _count: {
+          select: {
+            articleLikes: true,
+            comments: true,
+            bookmarks: true,
+          },
         },
+        articleLikes: userId ? { where: { userId } } : false,
+        bookmarks: userId ? { where: { userId } } : false,
       },
-      _count: {
-        select: {
-          articleLikes: true,
-          comments: true,
-        },
-      },
-      articleLikes: userId
-        ? {
-          where: { userId },
-        }
-        : false,
-      bookmarks: userId
-        ? {
-          where: { userId },
-        }
-        : false,
-    },
-  });
+    });
+  
+    if (article) {
+      const readCount = await prisma.userArticleInteraction.count({
+        where: { articleId: article.id, action: 'read' },
+      });
+      article.readsCount = readCount;
+    }
+  
+    return article;
 };
 
+
+
 const findByIds = async (userId, articleIds) => {
-  return prisma.article.findMany({
-    where: {
-      id: { in: articleIds },
-      moderationStatus: "public",
-    },
-    include: {
-      author: {
-        select: {
-          id: true,
-          fullName: true,
-          avatarUrl: true,
+    const articles = await prisma.article.findMany({
+      where: {
+        id: { in: articleIds },
+        moderationStatus: "public",
+      },
+      include: {
+        author: { select: { id: true, fullName: true, avatarUrl: true } },
+        articleTags: { include: { tag: true } },
+        _count: {
+          select: { articleLikes: true, comments: true, bookmarks: true }, 
         },
+        articleLikes: userId
+          ? { where: { userId }, select: { userId: true } }
+          : false,
+        bookmarks: userId
+          ? { where: { userId }, select: { userId: true } }
+          : false,
       },
-      articleTags: {
-        include: { tag: true },
-      },
-      _count: {
-        select: { articleLikes: true, comments: true },
-      },
-      articleLikes: userId
-        ? { where: { userId }, select: { userId: true } }
-        : false,
-      bookmarks: userId
-        ? { where: { userId }, select: { userId: true } }
-        : false,
-    },
-  });
-};
+    });
+  
+    await attachReadCounts(articles);
+    return articles;
+  };
 
 const findByIdsV2 = async (userId, articleIds) => {
   return prisma.article.findMany({
@@ -120,117 +156,74 @@ const findByIdsV2 = async (userId, articleIds) => {
   });
 };
 
-
-
-
-
-
 const findAll = async (userId, authorId, { skip, take }) => {
-  const whereClause = {
-    moderationStatus: "public",
-    authorId: authorId,
+    const whereClause = {
+      moderationStatus: "public",
+      authorId: authorId,
+    };
+  
+    const [articles, totalCount] = await prisma.$transaction([
+      prisma.article.findMany({
+        where: whereClause,
+        include: {
+          author: { select: { id: true, fullName: true, avatarUrl: true } },
+          articleTags: { include: { tag: true } },
+          _count: {
+            select: {
+              articleLikes: true,
+              comments: true,
+              bookmarks: true, 
+            },
+          },
+          articleLikes: userId ? { where: { userId } } : false,
+          bookmarks: userId ? { where: { userId } } : false,
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.article.count({ where: whereClause }),
+    ]);
+  
+    await attachReadCounts(articles);
+  
+    return { articles, totalCount };
   };
 
-  const [articles, totalCount] = await prisma.$transaction([
-    prisma.article.findMany({
-      where: whereClause,
-      include: {
-        author: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-        articleTags: {
-          include: {
-            tag: true,
-          },
-        },
-        _count: {
-          select: {
-            articleLikes: true,
-            comments: true,
-          },
-        },
-        articleLikes: userId
-          ? {
-            where: { userId },
-          }
-          : false,
-        bookmarks: userId
-          ? {
-            where: { userId },
-          }
-          : false,
+  const findFeed = async (userId, { skip, take }) => {
+    const whereClause = {
+      moderationStatus: "public",
+      author: {
+        followers: { some: { followerId: userId } },
       },
-      orderBy: { updatedAt: "desc" },
-      skip,
-      take,
-    }),
-    prisma.article.count({
-      where: whereClause,
-    }),
-  ]);
-
-  return { articles, totalCount };
-};
-
-const findFeed = async (userId, { skip, take }) => {
-  const whereClause = {
-    moderationStatus: "public",
-    author: {
-      followers: {
-        some: {
-          followerId: userId,
-        },
-      },
-    },
-  };
-
-  const [articles, totalCount] = await prisma.$transaction([
-    prisma.article.findMany({
-      where: whereClause,
-      include: {
-        author: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
+    };
+  
+    const [articles, totalCount] = await prisma.$transaction([
+      prisma.article.findMany({
+        where: whereClause,
+        include: {
+          author: { select: { id: true, fullName: true, avatarUrl: true } },
+          articleTags: { include: { tag: true } },
+          _count: {
+            select: {
+              articleLikes: true,
+              comments: true,
+              bookmarks: true,
+            },
           },
+          articleLikes: userId ? { where: { userId } } : false,
+          bookmarks: userId ? { where: { userId } } : false,
         },
-        articleTags: {
-          include: {
-            tag: true,
-          },
-        },
-        _count: {
-          select: {
-            articleLikes: true,
-            comments: true,
-          },
-        },
-        articleLikes: userId
-          ? {
-            where: { userId },
-          }
-          : false,
-        bookmarks: userId
-          ? {
-            where: { userId },
-          }
-          : false,
-      },
-      orderBy: { updatedAt: "desc" },
-      skip,
-      take,
-    }),
-    prisma.article.count({
-      where: whereClause,
-    }),
-  ]);
-
-  return { articles, totalCount };
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.article.count({ where: whereClause }),
+    ]);
+  
+    await attachReadCounts(articles);
+  
+    return { articles, totalCount };
 };
 
 const findById = async (id) => {
@@ -316,6 +309,9 @@ const findRelatedByTags = async (tagIds, excludeId, { skip, take }) => {
           select: { id: true, fullName: true, avatarUrl: true },
         },
         articleTags: { include: { tag: true } },
+        _count: {
+            select: { articleLikes: true, comments: true, bookmarks: true }, 
+        },
       },
       orderBy: { updatedAt: "desc" },
       skip,
@@ -344,6 +340,9 @@ const findByAuthor = async (authorId, excludeId, { skip, take }) => {
           select: { id: true, fullName: true, avatarUrl: true },
         },
         articleTags: { include: { tag: true } },
+        _count: {
+            select: { articleLikes: true, comments: true, bookmarks: true }, 
+        },
       },
       orderBy: { updatedAt: "desc" },
       skip,
@@ -357,19 +356,59 @@ const findByAuthor = async (authorId, excludeId, { skip, take }) => {
 
 
 const findArticlesForScoring = async (sinceDate) => {
-  return await prisma.article.findMany({
-    where: {
-      createdAt: { gte: sinceDate },
-      moderationStatus: "public",
-    },
-    select: {
-      id: true,
-      title: true,    
-      createdAt: true,
-      authorId: true,  
-    }
-  });
-}
+    const articles = await prisma.article.findMany({
+      where: {
+        createdAt: { gte: sinceDate },
+        moderationStatus: "public",
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        authorId: true,
+        _count: {
+          select: {
+            articleLikes: true, 
+            comments: true,     
+            bookmarks: true,  
+          },
+        },
+      },
+    });
+  
+    if (articles.length === 0) return [];
+  
+    const articleIds = articles.map(a => a.id);
+  
+    const interactions = await prisma.userArticleInteraction.groupBy({
+      by: ['articleId', 'action'],
+      where: {
+        articleId: { in: articleIds },
+        action: { in: ['read', 'click'] } 
+      },
+      _count: { _all: true }
+    });
+  
+    const interactionMap = {};
+    interactions.forEach(item => {
+      if (!interactionMap[item.articleId]) {
+        interactionMap[item.articleId] = { read: 0, click: 0 };
+      }
+      if (item.action === 'read') interactionMap[item.articleId].read = item._count._all;
+      if (item.action === 'click') interactionMap[item.articleId].click = item._count._all;
+    });
+  
+    return articles.map(article => ({
+      id: article.id,
+      title: article.title,
+      createdAt: article.createdAt,
+      likeCount: article._count.articleLikes,
+      commentCount: article._count.comments,
+      bookmarkCount: article._count.bookmarks,
+      readCount: interactionMap[article.id]?.read || 0,
+      clickCount: interactionMap[article.id]?.click || 0,
+    }));
+  };
 
 
 const statArticles = async (articleIds) => {
@@ -518,7 +557,8 @@ const findArticlesByUserV2 = async (userId, { search = '', cursor, take = 10, in
       _count: {
         select: {
           articleLikes: true,
-          comments: true
+          comments: true,
+          bookmarks: true
         }
       },
 
@@ -559,5 +599,6 @@ module.exports = {
   updateModerationStatus,
   findArticlesByUser,
   countArticlesByUser,
-  findArticlesByUserV2
+  findArticlesByUserV2,
+  attachReadCounts,
 };

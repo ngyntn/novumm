@@ -1,5 +1,5 @@
 const prisma = require("../config/db.config");
-
+const { attachReadCounts } = require("./article.repository");
 
 const getBookmarkArticles = async (userId, limit, cursor, search) => {
     const where = {
@@ -15,7 +15,7 @@ const getBookmarkArticles = async (userId, limit, cursor, search) => {
     };
 
 
-    return prisma.bookmark.findMany({
+    const articles = await prisma.bookmark.findMany({
         where,
         take: limit,
         cursor: cursor
@@ -30,7 +30,7 @@ const getBookmarkArticles = async (userId, limit, cursor, search) => {
                     slug: true,
                     createdAt: true,
                     thumbnailUrl: true,
-                    author: { select: { id: true, fullName: true, avatarUrl: true} },
+                    author: { select: { id: true, fullName: true, avatarUrl: true } },
                     articleTags: {
                         select: {
                             tag: { select: { id: true, name: true } }
@@ -40,7 +40,8 @@ const getBookmarkArticles = async (userId, limit, cursor, search) => {
                     _count: {
                         select: {
                             articleLikes: true,
-                            comments: true
+                            comments: true,
+                            bookmarks: true,
                         }
                     },
 
@@ -58,7 +59,11 @@ const getBookmarkArticles = async (userId, limit, cursor, search) => {
                 },
             },
         },
-    })
+    });
+
+    await attachReadCounts(articles);
+
+    return articles;
 };
 
 module.exports = {
