@@ -1,4 +1,5 @@
 const articleRepository = require("../repositories/article.repository");
+const userRepository = require("../repositories/user.repository");
 const interactionRepository = require("../repositories/interaction.repopsitory");
 const slugify = require("../utils/slugify");
 const {
@@ -163,8 +164,9 @@ const getFeaturedArticlesV2 = async (userId, limit, readSet) => {
   const unreadArticleIds = novelArticleIds.filter(id => !readSet.has(id));
 
   // suffle & limit 
-  const shuffled = unreadArticleIds.sort(() => 0.5 - Math.random());
-  const selectedIds = shuffled.slice(0, limit);
+//   const shuffled = unreadArticleIds.sort(() => 0.5 - Math.random());
+    //   const selectedIds = shuffled.slice(0, limit);
+    const selectedIds = unreadArticleIds.slice(0, limit);
 
   return selectedIds;
 }
@@ -201,7 +203,7 @@ const getRecommendedArticlesV2 = async (query) => {
       const recArticleIds = response.data.data.results; // [id1, id2, id3, ...]
 
       // Lấy danh sách 40 id bài viết nổi bật chưa đọc từ redis cache
-      const featuredArticleIds = await getFeaturedArticlesV2(userId, 40, readArticleSet);
+      const featuredArticleIds = await getFeaturedArticlesV2(userId, 100, readArticleSet);
       console.log(`Bài viết nổi bật chưa đọc cho user ${userId}:`, featuredArticleIds);
 
       // Trộn 2 danh sách trên và loại bỏ trùng lặp
@@ -209,10 +211,41 @@ const getRecommendedArticlesV2 = async (query) => {
       const combinedIds = Array.from(combinedIdsSet);
 
       // Suffle & lưu vào redis cache
-      const finalIds = combinedIds.sort(() => 0.5 - Math.random());
+    //   const finalIds = combinedIds.sort(() => 0.5 - Math.random());
 
-      const cacheKey = `user:${userId}:recommended_articles`;
-      await redisClient.set(cacheKey, JSON.stringify(finalIds));
+    //   const cacheKey = `user:${userId}:recommended_articles`;
+    //   await redisClient.set(cacheKey, JSON.stringify(finalIds));
+
+    const finalIds = [];
+    const maxLen = Math.max(recArticleIds.length, featuredArticleIds.length);
+    
+    // Tỉ lệ trộn: 3 bài Gợi ý - 1 bài Hot
+    let fIndex = 0;
+    let rIndex = 0;
+
+    while (finalIds.length < 200 && (rIndex < recArticleIds.length || fIndex < featuredArticleIds.length)) {
+        // Thêm 3 bài gợi ý
+        for (let i = 0; i < 3; i++) {
+            if (rIndex < recArticleIds.length) {
+                // Kiểm tra trùng lặp
+                if (!finalIds.includes(recArticleIds[rIndex])) {
+                    finalIds.push(recArticleIds[rIndex]);
+                }
+                rIndex++;
+            }
+        }
+        // Thêm 1 bài Hot (Top Gravity)
+        if (fIndex < featuredArticleIds.length) {
+            if (!finalIds.includes(featuredArticleIds[fIndex])) {
+                 finalIds.push(featuredArticleIds[fIndex]);
+            }
+            fIndex++;
+        }
+    }
+
+    // Cache kết quả cuối cùng
+    const cacheKey = `user:${userId}:recommended_articles`;
+    await redisClient.set(cacheKey, JSON.stringify(finalIds));
 
       console.log(`Đã cập nhật kho bài viết gợi ý cho user ${userId}: ${finalIds.length} items vào redis`);
 
@@ -551,40 +584,134 @@ const toggleArticleBookmark = async (userId, articleIdStr) => {
 };
 
 
+// const updateFeaturedArticles = async () => {
+//   const now = new Date();
+//   const sinceDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+//   // Lấy ra tất cả bài viết trong 24 giờ qua
+//   logger.info(`Đang lấy bài viết trong 24 giờ qua`);
+//   const featuredArticleIds = await articleRepository.findArticlesForScoring(sinceDate);
+//   logger.info(`Tìm thấy ${featuredArticleIds.length} bài viết`);
+
+//   // Bắt đầu truy vấn số tương tác và tính toán trọng số. 
+//   logger.info('Bắt đầu thống kê số tương tác cho các bài viết gần đây');
+//   const arrayArticleIds = featuredArticleIds.map(item => item.id);
+//   const itemedArticleCounts = await articleRepository.statArticles(arrayArticleIds);
+//   logger.info(`Thống kê số tương tác cho ${arrayArticleIds.length} bài viết hoàn tất`);
+
+
+//   // Tính điểm trọng số cho từng bài viết
+//   const articleScores = itemedArticleCounts.map((item) => {
+//     const baseScore = item.likeCount + item.commentCount * 2;
+//     const score = baseScore * (1 + item.commentCount / (item.likeCount + 1));
+//     return { articleId: item.articleId, score };
+//   });
+
+//   logger.info(`Tính toán điểm trọng số cho các bài viết hoàn tất`);
+//   articleScores.sort((a, b) => b.score - a.score);
+//   console.log('Top 100 bài viết nổi bật:', articleScores.slice(0, 100));
+
+//   // Bắt đầu cache bài viết nổi bật vào Redis
+//   const data = articleScores.slice(0, 100).map(a => a.articleId);
+//   console.log('Dữ liệu cache vào redis:', data);
+//   await redisClient.set('featured_articles', JSON.stringify(data), 'EX', 1200); // hết hạn sau 20 phút
+
+//   console.log(`Đã cập nhật bài viết nổi bật: ${articleScores.length} items vào redis`);
+// }
+
+// backend/src/services/article.service.js
+
 const updateFeaturedArticles = async () => {
-  const now = new Date();
-  const sinceDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-  // Lấy ra tất cả bài viết trong 24 giờ qua
-  logger.info(`Đang lấy bài viết trong 24 giờ qua`);
-  const featuredArticleIds = await articleRepository.findMostLikedSince(sinceDate);
-  logger.info(`Tìm thấy ${featuredArticleIds.length} bài viết`);
-
-  // Bắt đầu truy vấn số tương tác và tính toán trọng số. 
-  logger.info('Bắt đầu thống kê số tương tác cho các bài viết gần đây');
-  const arrayArticleIds = featuredArticleIds.map(item => item.id);
-  const itemedArticleCounts = await articleRepository.statArticles(arrayArticleIds);
-  logger.info(`Thống kê số tương tác cho ${arrayArticleIds.length} bài viết hoàn tất`);
-
-
-  // Tính điểm trọng số cho từng bài viết
-  const articleScores = itemedArticleCounts.map((item) => {
-    const baseScore = item.likeCount + item.commentCount * 2;
-    const score = baseScore * (1 + item.commentCount / (item.likeCount + 1));
-    return { articleId: item.articleId, score };
-  });
-
-  logger.info(`Tính toán điểm trọng số cho các bài viết hoàn tất`);
-  articleScores.sort((a, b) => b.score - a.score);
-  console.log('Top 100 bài viết nổi bật:', articleScores.slice(0, 100));
-
-  // Bắt đầu cache bài viết nổi bật vào Redis
-  const data = articleScores.slice(0, 100).map(a => a.articleId);
-  console.log('Dữ liệu cache vào redis:', data);
-  await redisClient.set('featured_articles', JSON.stringify(data), 'EX', 1200); // hết hạn sau 20 phút
-
-  console.log(`Đã cập nhật bài viết nổi bật: ${articleScores.length} items vào redis`);
-}
+    const now = new Date();
+  
+    // --- CẤU HÌNH THUẬT TOÁN ---
+    const GRAVITY = 1.8; 
+    const LOOKBACK_DAYS = 60; // Lấy dữ liệu 60 ngày để đảm bảo luôn có bài hiển thị
+    
+    // Trọng số cho các loại tương tác
+    const WEIGHTS = {
+      COMMENT: 5.0,
+      BOOKMARK: 3.0,
+      LIKE: 2.0,
+      READ: 1.0,
+      CLICK: 0.5
+    };
+  
+    const sinceDate = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    logger.info(`[Gravity] Bắt đầu tính điểm bài viết từ: ${sinceDate.toISOString()}`);
+  
+    // 1. Lấy danh sách bài viết (ID, Title, CreatedAt)
+    // (Đảm bảo bạn đã dùng hàm findArticlesForScoring hoặc findMostLikedSince trả về createdAt)
+    const articles = await articleRepository.findArticlesForScoring(sinceDate); 
+  
+    if (!articles || articles.length === 0) {
+      logger.warn('[Gravity] Không tìm thấy bài viết nào để xếp hạng.');
+      return;
+    }
+  
+    // 2. Lấy thống kê tương tác
+    const articleIds = articles.map(a => a.id);
+    const interactionStats = await articleRepository.statArticles(articleIds);
+  
+    // Chuyển stats thành Map để tra cứu nhanh
+    const statsMap = {};
+    interactionStats.forEach(stat => {
+      statsMap[stat.articleId] = stat;
+    });
+  
+    // 3. TÍNH ĐIỂM (CUSTOM GRAVITY ALGORITHM)
+    const scoredArticles = articles.map(article => {
+      const stats = statsMap[article.id] || {};
+      
+      // Convert BigInt/Null sang Number để tính toán
+      const likes = Number(stats.likeCount || 0);
+      const comments = Number(stats.commentCount || 0);
+      const bookmarks = Number(stats.bookmarkCount || 0);
+      const reads = Number(stats.readCount || 0);
+      const clicks = Number(stats.clickCount || 0);
+  
+      // Tính tổng điểm tương tác (P)
+      const points = (likes * WEIGHTS.LIKE) + 
+                     (comments * WEIGHTS.COMMENT) + 
+                     (bookmarks * WEIGHTS.BOOKMARK) + 
+                     (reads * WEIGHTS.READ) + 
+                     (clicks * WEIGHTS.CLICK);
+  
+      // Tính tuổi bài viết (T) theo giờ
+      const ageInHours = (now.getTime() - new Date(article.createdAt).getTime()) / (1000 * 60 * 60);
+  
+      // Công thức Gravity: Score = (P + 1) / (T + 2)^G
+      // Dùng (P + 1) thay vì (P - 1) vì bạn không có auto-like
+      // Cộng 1 để bài viết mới (chưa có tương tác) không bị điểm 0, vẫn có cơ hội hiển thị
+      const score = (points + 1) / Math.pow((ageInHours + 2), GRAVITY);
+  
+      return {
+        id: article.id,
+        title: article.title, // Bật lên nếu muốn log title
+        score: score,
+        points: points,
+        age: ageInHours,
+        stats: { likes, comments, bookmarks, reads, clicks } // Để debug
+      };
+    });
+  
+    // 4. Sắp xếp giảm dần theo điểm Score
+    scoredArticles.sort((a, b) => b.score - a.score);
+  
+    // Debug Log: Xem Top 5 bài viết và lý do tại sao nó đứng top
+    console.log('--- TOP 5 RANKING (WEIGHTED) ---');
+    scoredArticles.slice(0, 5).forEach((a, idx) => {
+      console.log(`#${idx + 1} ID:${a.id} Score:${a.score.toFixed(4)} | Pts:${a.points} (L:${a.stats.likes}, C:${a.stats.comments}, B:${a.stats.bookmarks}) | Age:${a.stats.age?.toFixed(1)}h`);
+    });
+  
+    // 5. Lưu vào Redis
+    const topIds = scoredArticles.slice(0, 100).map(a => a.id);
+    
+    if (topIds.length > 0) {
+      await redisClient.set('featured_articles', JSON.stringify(topIds), 'EX', 20 * 60); // Cache 20 phút
+      logger.info(`[Gravity] Đã cập nhật ${topIds.length} bài viết nổi bật.`);
+    }
+  }
 
 
 const updateReadAction = async (userId, articleIdStr) => {
@@ -596,6 +723,21 @@ const updateReadAction = async (userId, articleIdStr) => {
 
   await interactionRepository.recordReadAction(userId, articleId);
 }
+
+// Hàm getUserArticles sửa tương tự
+const getUserArticles = async (userId, { limit = 10, cursor, search }) => {
+
+  const articles = await articleRepository.findArticlesByUserV2(userId, {
+    search,
+    cursor,
+    take: limit,
+    includePrivate: false,
+  });
+
+  const nextCursor = articles.length === limit ? articles[articles.length - 1].id : null;
+
+  return { articles, nextCursor };
+};
 
 module.exports = {
   createArticle,
@@ -614,4 +756,5 @@ module.exports = {
   updateFeaturedArticles,
   getRecommendedArticlesV2,
   updateReadAction,
+  getUserArticles,
 };

@@ -356,7 +356,7 @@ const findByAuthor = async (authorId, excludeId, { skip, take }) => {
 };
 
 
-const findMostLikedSince = async (sinceDate) => {
+const findArticlesForScoring = async (sinceDate) => {
   return await prisma.article.findMany({
     where: {
       createdAt: { gte: sinceDate },
@@ -364,6 +364,9 @@ const findMostLikedSince = async (sinceDate) => {
     },
     select: {
       id: true,
+      title: true,    
+      createdAt: true,
+      authorId: true,  
     }
   });
 }
@@ -422,9 +425,119 @@ const findNovelArticlesByTags = async (articleIds, tagIds) => {
   return ids.map(i => i.article_id);
 }
 
+const countArticles = async () => prisma.article.count();
 
+const getArticles7Days = async () => {
+  return prisma.article.groupBy({
+    by: ['createdAt'],
+    _count: true,
+    where: { createdAt: { gte: new Date(new Date().setDate(new Date().getDate() - 7)) } },
+  });
+};
 
+const updateModerationStatus = async(articleId, status, reason, tx) => {
+  return tx.article.update({
+    where : {
+      id : articleId
+    },
+    data : {
+      moderationStatus: status,
+      violationReason: reason
+    }
+  });
+}
 
+const findArticlesByUser = async (userId, { search = '', skip = 0, take = 10, includePrivate = false }) => {
+  const whereClause = {
+    authorId: userId,
+    title: search ? { contains: search } : undefined,
+    moderationStatus: includePrivate
+        ? { not: 'deleted' }
+        : 'public',
+  };
+
+  return prisma.article.findMany({
+    where: whereClause,
+    skip,
+    take,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      author: {
+        select: { id: true, fullName: true, avatarUrl: true },
+      },
+      // Include more relations if needed, e.g., tags
+    },
+  });
+};
+
+const countArticlesByUser = async (userId, { search = '', includePrivate = false }) => {
+  const whereClause = {
+    authorId: userId,
+    title: search ? { contains: search } : undefined,
+    moderationStatus: includePrivate
+        ? { not: 'deleted' }
+        : 'public',
+  };
+
+  return prisma.article.count({ where: whereClause });
+};
+
+const findArticlesByUserV2 = async (userId, { search = '', cursor, take = 10, includePrivate = false }) => {
+  const where = {
+    authorId: userId,
+    ...(search && {
+      OR: [
+        { title: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+      ],
+    }),
+    moderationStatus: includePrivate ? { not: 'deleted' } : 'public',
+  };
+
+  const articles = await prisma.article.findMany({
+    where,
+    take: Number(take),
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    orderBy: { id: 'desc' },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      content: true, // Thêm nếu DTO cần
+      createdAt: true,
+      thumbnailUrl: true,
+      author: {
+        select: { id: true, fullName: true, avatarUrl: true }
+      },
+      articleTags: {
+        select: {
+          tag: { select: { id: true, name: true } }
+        },
+      },
+      _count: {
+        select: {
+          articleLikes: true,
+          comments: true
+        }
+      },
+
+      // ✅ check user đã like chưa
+      articleLikes: {
+        where: { userId },
+        select: { userId: true }
+      },
+
+      // ✅ check bookmark
+      bookmarks: {
+        where: { userId },
+        select: { userId: true }
+      }
+    },
+  });
+
+  return articles; // Trả về mảng [ {id, title...}, {...} ]
+};
 module.exports = {
   create,
   update,
@@ -437,8 +550,14 @@ module.exports = {
   findByIdsV2,
   findRelatedByTags,
   findByAuthor,
-  findMostLikedSince,
+  findArticlesForScoring,
   statArticles,
   getUserPreferenceTags,
   findNovelArticlesByTags,
+  countArticles,
+  getArticles7Days,
+  updateModerationStatus,
+  findArticlesByUser,
+  countArticlesByUser,
+  findArticlesByUserV2
 };

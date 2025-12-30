@@ -3,8 +3,15 @@ const userRepository = require("../repositories/user.repository");
 const logger = require("../utils/logger");
 const {BadRequestError, NotFoundError} = require("../utils/AppError");
 
-const getFollowers = async (userId, { limit = 10, cursor, search }) => {
-    const followers = await followRepository.getFollowers(userId, limit, cursor, search);
+const getFollowers = async (userId, targetId, { limit = 10, cursor, search }) => {
+    const followers = await followRepository.getFollowList({
+        type: "follower",
+        targetUserId: targetId,
+        currentUserId: userId,
+        limit: limit,
+        cursor: cursor,
+        search: search
+    });
     const nextCursor = followers.length === limit
         ? followers[followers.length - 1].follower.id
         : null;
@@ -13,8 +20,16 @@ const getFollowers = async (userId, { limit = 10, cursor, search }) => {
     return {  followers, nextCursor };
 };
 
-const getFollowing = async (userId, { limit = 10, cursor, search }) => {
-    const following = await followRepository.getFollowing(userId, limit, cursor, search);
+const getFollowing = async (userId, targetId, { limit = 10, cursor, search }) => {
+
+    const following = await followRepository.getFollowList({
+        type: "following",
+        targetUserId: targetId,
+        currentUserId: userId,
+        limit: limit,
+        cursor: cursor,
+        search: search
+    });
     const nextCursor = following.length === limit
         ? following[following.length - 1].followed.id
         : null;

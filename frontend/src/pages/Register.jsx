@@ -1,137 +1,140 @@
-// src/pages/Register.jsx
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { registerUser, sendVerifyEmail, verifyOtp } from "../api/authApi";
 
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  
+  const [step, setStep] = useState(1); // 1: Email, 2: OTP, 3: Info
   const [formData, setFormData] = useState({
-    fullname: "",
-    username: "",
+    fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
+    otp: "",
   });
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError(null);
   };
 
-  const handleSubmit = (e) => {
+  // Xử lý Bước 1: Gửi OTP
+  const handleSendEmail = async (e) => {
     e.preventDefault();
-    // Logic đăng ký API sẽ ở đây
-    alert("Đăng ký thành công! Vui lòng đăng nhập.");
-    navigate("/login");
+    setLoading(true);
+    const result = await dispatch(sendVerifyEmail({ email: formData.email }));
+    if (sendVerifyEmail.fulfilled.match(result)) {
+      setStep(2);
+    } else {
+      setError(result.payload);
+    }
+    setLoading(false);
+  };
+
+  // Xử lý Bước 2: Xác thực OTP
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const result = await dispatch(verifyOtp({ email: formData.email, otp: formData.otp }));
+    if (verifyOtp.fulfilled.match(result)) {
+      setStep(3); // BE đã lưu cache, giờ cho nhập pass
+    } else {
+      setError(result.payload);
+    }
+    setLoading(false);
+  };
+
+  // Xử lý Bước 3: Đăng ký cuối cùng
+  const handleFinalRegister = async (e) => {
+    e.preventDefault();
+    if (formData.password.length < 6) return setError("Mật khẩu ít nhất 6 ký tự!");
+    if (formData.password !== formData.confirmPassword) return setError("Mật khẩu không khớp!");
+
+    setLoading(true);
+    const { confirmPassword, otp, ...registerData } = formData;
+    const result = await dispatch(registerUser(registerData));
+
+    if (registerUser.fulfilled.match(result)) {
+      alert("Đăng ký thành công!");
+      navigate("/login");
+    } else {
+      setError(result.payload);
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
-      {/* Cột bên trái - Hình ảnh & Branding */}
-      <div
-        className="hidden md:flex flex-col justify-center items-center text-white p-12 rounded-r-2xl"
-        style={{
-          backgroundImage: `url('src/assets/background1.png')`, 
-          backgroundSize: "cover", 
-          backgroundPosition: "center", 
-        }}
-      >
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black p-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
+        
+        {/* Progress Bar đơn giản */}
+        <div className="flex justify-between mb-8">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className={`h-1 w-full mx-1 rounded ${step >= s ? "bg-indigo-600" : "bg-gray-200"}`} />
+          ))}
+        </div>
 
-      {/* Cột bên phải - Form Đăng ký */}
-      <div className="flex items-center justify-center bg-gray-50 dark:bg-black transition-colors py-12 px-4">
-        <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">
-            Tạo tài khoản mới
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
-            Nhanh chóng và dễ dàng.
-          </p>
+        <h2 className="text-2xl font-bold text-center mb-6 dark:text-white">
+          {step === 1 && "Nhập Email"}
+          {step === 2 && "Xác nhận mã OTP"}
+          {step === 3 && "Thông tin cá nhân"}
+        </h2>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && (
-              <p className="text-red-500 text-sm text-center">{error}</p>
-            )}
+        {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Họ và tên
-              </label>
-              <input
-                type="text"
-                name="fullname"
-                placeholder="Nhập họ và tên của bạn"
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Tên đăng nhập
-              </label>
-              <input
-                type="text"
-                name="username"
-                placeholder="Tên sẽ hiển thị với mọi người"
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="Nhập email của bạn"
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Mật khẩu
-              </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="Nhập mật khẩu của bạn"
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition mt-2"
-            >
-              Đăng ký
+        {/* STEP 1: GỬI EMAIL */}
+        {step === 1 && (
+          <form onSubmit={handleSendEmail} className="flex flex-col gap-4">
+            <input
+              type="email" name="email" placeholder="Email của bạn" required
+              onChange={handleChange} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white"
+            />
+            <button disabled={loading} className="bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+              {loading ? "Đang gửi..." : "Tiếp tục"}
             </button>
           </form>
+        )}
 
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
-            Bạn đã có tài khoản?{" "}
-            <Link
-              to="/login"
-              className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
-            >
-              Đăng nhập
-            </Link>
-          </p>
-          <div className="mt-8 text-center text-xs text-gray-400">
-            <p>Được thực hiện bởi:</p>
-            <p className="font-semibold">Phạm Tấn Nguyên - N22DCCN156</p>
-            <p className="font-semibold">Ngô Tấn Sang - N22DCCN167</p>
-            <p className="font-semibold">Văn Minh Tấn - N22DCCN175</p>
-          </div>
-        </div>
+        {/* STEP 2: NHẬP OTP */}
+        {step === 2 && (
+          <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+            <p className="text-sm text-gray-500 text-center">Mã đã gửi tới {formData.email}</p>
+            <input
+              type="text" name="otp" placeholder="Nhập mã OTP" required
+              onChange={handleChange} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white text-center text-xl tracking-widest"
+            />
+            <button disabled={loading} className="bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+              {loading ? "Đang xác thực..." : "Xác nhận mã"}
+            </button>
+            <button type="button" onClick={() => setStep(1)} className="text-sm text-gray-400 hover:underline">Quay lại</button>
+          </form>
+        )}
+
+        {/* STEP 3: NHẬP INFO & PASS */}
+        {step === 3 && (
+          <form onSubmit={handleFinalRegister} className="flex flex-col gap-4">
+            <input
+              type="text" name="fullName" placeholder="Họ và tên" required
+              onChange={handleChange} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white"
+            />
+            <input
+              type="password" name="password" placeholder="Mật khẩu (>= 6 ký tự)" required
+              onChange={handleChange} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white"
+            />
+            <input
+              type="password" name="confirmPassword" placeholder="Nhập lại mật khẩu" required
+              onChange={handleChange} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-800 dark:text-white"
+            />
+            <button disabled={loading} className="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+              {loading ? "Đang đăng ký..." : "Hoàn tất"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

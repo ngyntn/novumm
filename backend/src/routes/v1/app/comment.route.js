@@ -1,8 +1,8 @@
 const express = require("express");
-const commentController = require("../controllers/comment.controller");
-const auth = require("../middlewares/auth.middleware");
-const validate = require("../middlewares/validate.middleware");
-const commentValidation = require("../validations/comment.validation");
+const commentController = require("../../../controllers/comment.controller");
+const auth = require("../../../middlewares/auth.middleware");
+const validate = require("../../../middlewares/validate.middleware");
+const commentValidation = require("../../../validations/comment.validation");
 
 const router = express.Router();
 
@@ -21,10 +21,10 @@ router.post(
 );
 
 router.get(
-  "/:id/replies",
-  auth,
-  validate(commentValidation.getReplies),
-  commentController.getReplies
+    "/:id/replies",
+    auth,
+    validate(commentValidation.getReplies),
+    commentController.getReplies
 );
 
 router.put(

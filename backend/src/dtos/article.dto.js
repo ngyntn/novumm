@@ -78,11 +78,25 @@ class ArticleCompactDTO {
     this.thumbnailUrl = article.thumbnailUrl || null;
   }
 }
+class ListArticlesDTO {
+  constructor(bookmarkArticles, nextCursor = null) {
+    this.articles = bookmarkArticles.map(b => new ArticleSummaryDTO(b.article));
+    this.nextCursor = nextCursor;
+  }
+}
 
+class ListArticlesDTOV2 {
+  constructor(bookmarkArticles, nextCursor = null) {
+    this.articles = bookmarkArticles.map(b => new ArticleSummaryDTO(b));
+    this.nextCursor = nextCursor;
+  }
+}
 
 module.exports = {
   ArticleDetailDTO,
   ArticleSummaryDTO,
   ArticleCompactDTO,
   AuthorDTO,
+  ListArticlesDTO,
+  ListArticlesDTOV2
 };

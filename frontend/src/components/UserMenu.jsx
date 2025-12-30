@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Users, PlusSquare, User as ProfileIcon, LogOut } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
-import { logout } from "../store/userSlice";
 import { useDispatch } from "react-redux";
+import { logoutUser } from "../api/authApi";
 
 const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,13 +24,14 @@ const UserMenu = () => {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
-      dispatch(logout());
+      await dispatch(logoutUser()).unwrap();
       navigate("/login");
       setIsOpen(false);
     } catch (error) {
       console.error("Logout failed:", error);
+      navigate("/login");
     }
   };
 

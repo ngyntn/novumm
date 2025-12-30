@@ -14,10 +14,13 @@ class UserResponseDTO {
 }
 
 class UserSummaryDTO {
-    constructor({ id, fullName, avatarUrl }) {
+    constructor({ id, fullName, avatarUrl, isFollowing, isFollowerOfMe}) {
         this.id = id;
         this.fullName = fullName;
         this.avatarUrl = avatarUrl || null;
+        this.isFollowing = isFollowing;
+        this.isFollowerOfMe = isFollowerOfMe;
+
     }
 }
 

@@ -1,8 +1,9 @@
 const ApiResponse = require("../utils/ApiResponse");
 const articleService = require("../services/article.service");
-const { ArticleDetailDTO, ArticleSummaryDTO, ArticleCompactDTO } = require("../dtos/article.dto");
+const { ArticleDetailDTO, ArticleSummaryDTO, ArticleCompactDTO, ListArticlesDTOV2} = require("../dtos/article.dto");
 const asyncHandler = require("../utils/asyncHandler");
 const { BadRequestError } = require("../utils/AppError");
+const {PaginationDTO} = require("../dtos/user.dto");
 
 const createArticle = async (req, res, next) => {
   try {
@@ -127,8 +128,6 @@ const getSearchArticles = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 
 
@@ -267,7 +266,31 @@ const read = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Cập nhật thành công.", null));
 });
 
+const getMyArticles = async (req, res, next) => {
+  try {
+    const userId = req.user.id ;
+    console.log("Fetching articles of user with id:", userId);
+    const paginationDTO = new PaginationDTO(req.query);
+    const result = await articleService.getUserArticles(userId, paginationDTO);
+    console.log(result);
+    const response = new ListArticlesDTOV2(result.articles, result.nextCursor);
+    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', response));
+  } catch (error) {
+    next(error);
+  }
+};
 
+const getUserArticles = async (req, res, next) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const paginationDTO = new PaginationDTO(req.query);
+    const result = await articleService.getUserArticles(userId, paginationDTO);
+    const response = new ListArticlesDTOV2(result.articles, result.nextCursor);
+    return res.status(200).json(new ApiResponse(true, 'Articles retrieved successfully', response));
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createArticle,
@@ -284,4 +307,6 @@ module.exports = {
   toggleLike,
   toggleBookmark,
   read,
+  getMyArticles,
+  getUserArticles
 };

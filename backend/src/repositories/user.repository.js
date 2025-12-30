@@ -43,6 +43,39 @@ const updateById = async (id, data) => {
     });
 };
 
+const getUsers7Days = async () => {
+    return prisma.user.groupBy({
+        by: ['createdAt'],
+        _count: true,
+        where: { createdAt: { gte: new Date(new Date().setDate(new Date().getDate() - 7)) } },
+    });
+};
+
+
+const countUsers = async () => prisma.user.count();
+
+const listUsers = async (page, limit, search, role, isActive) => { // Thêm is_active
+    const skip = (page - 1) * limit;
+    const where = {};
+    if (search) {
+        where.OR = [
+            { fullName: { contains: search } },
+            { email: { contains: search } },
+        ];
+    }
+    if (role) where.role = role;
+    if (isActive !== undefined) where.isActive = isActive === 'true';
+
+    return prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+    });
+};
+
+const updateStatus = async (id, isActive) => {
+    return prisma.user.update({ where: { id }, data: { isActive } });
+};
 
 module.exports = {
     updatePassword,
@@ -50,5 +83,9 @@ module.exports = {
     create,
     findById,
     updateById,
+    getUsers7Days,
+    countUsers,
+    listUsers,
+    updateStatus,
 };
 

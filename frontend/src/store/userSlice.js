@@ -1,13 +1,27 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { loginUser } from '../api/authApi';
-import { fetchUserProfile, fetchCurrentUser, toggleFollow, updateUserProfile } from '../api/userApi';
-import { fetchFeedNews, fetchUserNews } from '../api/articleApi';
+import { loginUser, logoutUser } from '../api/authApi';
+import { 
+    fetchUserProfile, 
+    toggleFollow, 
+    updateUserProfile, 
+    fetchFollowList // Đảm bảo đã import hàm này
+} from '../api/userApi';
+import { fetchArticlesByTab } from '../api/articleApi';
 
 const initialState = {
     currentUser: JSON.parse(localStorage.getItem('currentUser')) || null,
-    profile: { 
+    profile: {
         data: null,
-        news: [],
+        posts: { articles: [], nextCursor: null },
+        liked: { articles: [], nextCursor: null },
+        bookmarked: { articles: [], nextCursor: null },
+        // --- PHẦN THIẾU: Lưu trữ danh sách cho Modal ---
+        followList: { 
+            users: [], 
+            nextCursor: null, 
+            status: 'idle',
+            type: null 
+        },
         status: 'idle',
         error: null,
     },
@@ -20,19 +34,12 @@ const userSlice = createSlice({
     initialState,
     reducers: {
         resetProfile: (state) => {
-            state.profile.data = null;
-            state.profile.news = [];
-            state.profile.status = 'idle';
-            state.profile.error = null;
+            state.profile = initialState.profile;
         },
         loadUserFromStorage: (state) => {
             const user = localStorage.getItem('currentUser');
-            const refreshToken = localStorage.getItem('refreshToken');
-            if (user && refreshToken) {
+            if (user) {
                 state.currentUser = JSON.parse(user);
-                state.status = 'succeeded';
-            } else {
-                state.currentUser = null;
                 state.status = 'succeeded';
             }
         },
@@ -43,64 +50,114 @@ const userSlice = createSlice({
             localStorage.removeItem('currentUser');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('accessToken');
-            state.feed = initialState.feed;
         },
     },
     extraReducers: (builder) => {
         builder
-            .addCase(loginUser.pending, (state) => {
-                state.status = 'loading';
-                state.error = null;
-            })
+            // --- Xử lý Đăng nhập ---
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.currentUser = action.payload.user;
-                
                 localStorage.setItem('currentUser', JSON.stringify(action.payload.user));
                 localStorage.setItem('accessToken', action.payload.accessToken.accessToken);
                 localStorage.setItem('refreshToken', action.payload.refreshToken.refreshToken);
             })
-            .addCase(loginUser.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.payload; 
+
+            .addCase(logoutUser.fulfilled, (state) => {
                 state.currentUser = null;
+                state.status = 'idle';
+                state.profile = initialState.profile;
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('accessToken');
             })
-            .addCase(fetchUserProfile.pending, (state) => { state.profile.status = 'loading'; })
-            .addCase(fetchUserProfile.fulfilled, (state, action) => { state.profile.status = 'succeeded'; state.profile.data = action.payload; })
-            .addCase(fetchUserProfile.rejected, (state, action) => { state.profile.status = 'failed'; state.profile.error = action.payload; })
-            .addCase(fetchUserNews.fulfilled, (state, action) => { 
-                state.profile.news = action.payload; 
-                console.log("Fetched user news:", action.payload);
+            .addCase(logoutUser.rejected, (state, action) => {
+                // Vẫn logout local ngay cả khi API lỗi
+                state.currentUser = null;
+                state.status = 'idle';
+                state.error = action.payload;
+                state.profile = initialState.profile;
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('accessToken');
             })
+
+            // --- Xử lý Lấy Profile User ---
+            .addCase(fetchUserProfile.fulfilled, (state, action) => { 
+                state.profile.status = 'succeeded'; 
+                state.profile.data = action.payload; 
+            })
+
+            // --- Xử lý Lấy Bài Viết Theo Tab ---
+            .addCase(fetchArticlesByTab.fulfilled, (state, action) => {
+                const { tab, data } = action.payload;
+                state.profile.status = 'succeeded';
+                if (tab === 'posts') state.profile.posts = data;
+                else if (tab === 'liked') state.profile.liked = data;
+                else if (tab === 'bookmarked') state.profile.bookmarked = data;
+            })
+
+            // --- PHẦN THIẾU: Xử lý danh sách Follower/Following cho Modal ---
+            .addCase(fetchFollowList.pending, (state) => {
+                state.profile.followList.status = 'loading';
+            })
+            .addCase(fetchFollowList.fulfilled, (state, action) => {
+                const { type, data } = action.payload;
+                state.profile.followList.status = 'succeeded';
+                state.profile.followList.type = type;
+
+                // Nếu có cursor (tải thêm) thì nối mảng, không thì thay mới
+                if (action.meta.arg.cursor) {
+                    state.profile.followList.users = [...state.profile.followList.users, ...data.users];
+                } else {
+                    state.profile.followList.users = data.users;
+                }
+                state.profile.followList.nextCursor = data.nextCursor;
+            })
+            .addCase(fetchFollowList.rejected, (state, action) => {
+                state.profile.followList.status = 'failed';
+            })
+
             .addCase(toggleFollow.fulfilled, (state, action) => {
-                console.log("Toggle follow fulfilled with data:", action.payload);
-                let act = action.payload.action;
-                if (act === 'follow' && state.profile.data) {
-                    console.log("Updating state for follow action");
-                    state.profile.data = {
-                        ...state.profile.data,
-                        isFollowing: true,
-                        totalFollowers: (state.profile.data.totalFollowers || 0) + 1,
-                    };
-                    console.log("Updated profile data:", state.profile.data);
-                } else if (act === 'unfollow' && state.profile.data) {
-                    console.log("Updating state for unfollow action");
-                    state.profile.data = {
-                        ...state.profile.data,
-                        isFollowing: false,
-                        totalFollowers: Math.max((state.profile.data.totalFollowers || 1) - 1, 0),
-                    };
-                    console.log("Updated profile data:", state.profile.data);
+                // Lấy thông tin từ tham số truyền vào action (meta.arg)
+                const { targetUser, isFollowing } = action.meta.arg; 
+                const newStatus = !isFollowing;
+
+                // --- CẬP NHẬT 1: Cập nhật số lượng hiển thị trên Profile Header ---
+                // Kiểm tra nếu người vừa được tương tác chính là người đang hiển thị Profile
+                if (state.profile.data && Number(state.profile.data.id) === Number(targetUser)) {
+                    state.profile.data.isFollowing = newStatus;
+
+                    // Cập nhật số lượng Followers hiển thị ngoài Header
+                    if (newStatus) {
+                        // Nếu vừa nhấn Follow -> Tăng 1
+                        state.profile.data.totalFollowers = (state.profile.data.totalFollowers || 0) + 1;
+                    } else {
+                        // Nếu vừa nhấn Unfollow -> Giảm 1 (không để âm)
+                        state.profile.data.totalFollowers = Math.max(0, (state.profile.data.totalFollowers || 0) - 1);
+                    }
+                }
+
+                // --- CẬP NHẬT 2: Cập nhật trạng thái nút bấm ngay trong Modal ---
+                const userInList = state.profile.followList.users.find(
+                    (u) => Number(u.id) === Number(targetUser)
+                );
+                if (userInList) {
+                    userInList.isFollowing = newStatus;
                 }
             })
+
+            // --- Xử lý Cập nhật Profile ---
             .addCase(updateUserProfile.fulfilled, (state, action) => {
-                state.currentUser = action.payload;
-                if (state.profile.data?.id === action.payload.id) {
-                    state.profile.data = action.payload;
+                state.currentUser = { ...state.currentUser, ...action.payload };
+                localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+                if (state.profile.data && (state.profile.data.id === action.payload.id)) {
+                    state.profile.data = { ...state.profile.data, ...action.payload };
                 }
             });
+            
     },
 });
 
-export const { resetProfile, resetFeed, loadUserFromStorage, logout } = userSlice.actions;
+export const { resetProfile, loadUserFromStorage, logout } = userSlice.actions;
 export default userSlice.reducer;
