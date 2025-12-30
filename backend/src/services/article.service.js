@@ -2,6 +2,8 @@ const articleRepository = require("../repositories/article.repository");
 const userRepository = require("../repositories/user.repository");
 const interactionRepository = require("../repositories/interaction.repopsitory");
 const slugify = require("../utils/slugify");
+const logger = require('../utils/logger');
+
 const {
   BadRequestError,
   NotFoundError,
@@ -11,7 +13,6 @@ const { default: axios } = require("axios");
 const { ar } = require("zod/locales");
 const notificationService = require("./notification.service");
 const { AuthorDTO } = require("../dtos/article.dto");
-const logger = require("../utils/logger");
 
 const redisClient = require('../config/redis.config');
 
@@ -153,7 +154,6 @@ const getFeaturedArticlesV2 = async (userId, limit, readSet) => {
     return [];
   }
   const cachedArticlesIds = JSON.parse(cachedArticles);
-  logger.info(`Tìm thấy ${cachedArticlesIds.length} bài viết nổi bật trong Redis`);
 
   // Lọc danh sách bài viết ở trên: không chưa tag ưu thích của người dùng
   const preferredTags = await articleRepository.getUserPreferenceTags(userId, day = 7); // [tag1, tag2, ...]
@@ -201,10 +201,13 @@ const getRecommendedArticlesV2 = async (query) => {
       }
 
       const recArticleIds = response.data.data.results; // [id1, id2, id3, ...]
+      logger.info(`Get recommended articles for user ${userId}:`);
+      console.log(recArticleIds || []);
 
       // Lấy danh sách 40 id bài viết nổi bật chưa đọc từ redis cache
       const featuredArticleIds = await getFeaturedArticlesV2(userId, 100, readArticleSet);
-      console.log(`Bài viết nổi bật chưa đọc cho user ${userId}:`, featuredArticleIds);
+      logger.info(`Get featured articles for user ${userId}:`);
+      console.log(featuredArticleIds);
 
       // Trộn 2 danh sách trên và loại bỏ trùng lặp
       const combinedIdsSet = new Set([...recArticleIds, ...featuredArticleIds]);
@@ -273,7 +276,6 @@ const getRecommendedArticlesV2 = async (query) => {
     const orderedArticles = pagedArticleIds
       .map((id) => resultArticles.find((a) => a.id === id))
       .filter(Boolean);
-    console.log('[Result] Bài viết gợi ý trả về:', orderedArticles.map(a => a.id));
 
     const pagination = {
       currentPage: page,
@@ -293,6 +295,7 @@ const getRecommendedArticlesV2 = async (query) => {
       await redisClient.expire(readKey, 90 * 24 * 60 * 60); // TTL 90 ngày
     }
 
+    logger.info('Get final articles: ', orderedArticles);
     return { articles: orderedArticles, pagination}
 
   } catch (error) {
@@ -337,6 +340,8 @@ const getRecommendedArticles = async (query) => {
 
     // Bắt đầu lấy thêm bái viết phổ biến
     const featuredArticles = await getFeaturedArticles(userId, Math.ceil(limit * 20 / 100));
+
+
 
     // Kết hợp 2 danh sấch và loại bỏ trùng lặp:
     const mixedArticles = [...orderedArticles];

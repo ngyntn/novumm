@@ -16,6 +16,8 @@ svd = joblib.load('model/svd_model.pkl')
 TARGET_DIMS = 1000
 
 
+
+
 def transform_query_to_vector(query_text):
     cleaned_query = clean_text(query_text)
     query_tfidf = vectorizer.transform([cleaned_query])
@@ -29,7 +31,41 @@ def transform_query_to_vector(query_text):
     return query_reduced[0].tolist()
 
 
+def correct_typo_with_es(text_query):
+    # Gọi Elasticsearch để tìm từ đúng có thực sự tồn tại trong DB bài viết
+    resp = es.search(
+        index="articles",
+        body={
+            "suggest": {
+                "text": text_query,
+                "simple_phrase": {
+                    "phrase": {
+                        "field": "title",  # Tìm lỗi sai dựa trên field Title
+                        "size": 1,
+                        "confidence": 0.0,
+                        "real_word_error_likelihood": 0.95,
+                        "max_errors": 2,
+                    }
+                }
+            }
+        }
+    )
+
+    # Lấy từ gợi ý đầu tiên nếu có
+    try:
+        suggestions = resp['suggest']['simple_phrase'][0]['options']
+        if suggestions:
+            corrected_text = suggestions[0]['text']
+            print(f"ES Corrected: '{text_query}' -> '{corrected_text}'")
+            return corrected_text
+    except:
+        pass
+
+    return text_query
+
 def knn_text_search(query_text, top_k=5, index_name="articles"):
+    query_text = correct_typo_with_es(query_text)
+    print(f"Correct query: {query_text}")
     # Transform query thành vector
     query_vector = transform_query_to_vector(query_text)
     print(f"Query vector shape: {len(query_vector)} dims")
